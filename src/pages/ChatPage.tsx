@@ -2324,7 +2324,7 @@ Ask me anything to get started!`;
                        userMessage={messages[i - 1].content || ""}
                        assistantReply={msg.content || ""}
                        conversationId={conversationId}
-                       messageId={msg.id}
+                       messageId={msg.id || null}
                        onPick={(q) => setInput(q)}
                      />
                    )}
