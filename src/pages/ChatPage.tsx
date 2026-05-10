@@ -591,13 +591,15 @@ const ChatPage = () => {
 
     const updateAssistant = (chunk: string) => {
       if (isToolMarkerChunk(chunk)) return;
+      const safeChunk = sanitizeLeakedToolText(chunk);
+      if (!safeChunk) return;
       if (!hasStartedResponse) {
         hasStartedResponse = true;
         setIsThinking(false);
         setSearchStatus("");
       }
       const wasEmpty = assistantContent.length === 0;
-      assistantContent += chunk;
+      assistantContent += safeChunk;
       scheduleAssistantUpdate(wasEmpty);
     };
 
@@ -618,7 +620,7 @@ const ChatPage = () => {
         }
         return { role: m.role, content };
       }
-      return { role: m.role, content: m.content };
+      return { role: m.role, content: m.role === "assistant" ? sanitizeLeakedToolText(m.content) : m.content };
     });
 
     if (currentFiles.some((f) => f.type === "file")) {
