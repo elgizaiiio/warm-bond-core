@@ -100,10 +100,33 @@ const sanitizeLeakedToolText = (value: string) => stripLeakedToolText(value).tri
 
 const makeLeakedToolStreamSanitizer = () => {
   let buffer = "";
+  let droppingToolLine = false;
   const markers = ["${tool_code}", "print(default_api.", "default_api.", "<tool_call", "<function_call", "```tool_code", "```tool_call", "```function_call", "```python"];
   return (chunk: string, force = false) => {
     buffer += chunk;
     const lower = buffer.toLowerCase();
+    if (droppingToolLine) {
+      const nl = buffer.indexOf("\n");
+      if (nl === -1) {
+        buffer = "";
+        return "";
+      }
+      buffer = buffer.slice(nl + 1);
+      droppingToolLine = false;
+    }
+    const toolLineMatch = buffer.match(/(?:^|\n)[^\n]*(?:\$\{tool_code\}|default_api\.|print\s*\(\s*default_api\.)/i);
+    if (toolLineMatch && toolLineMatch.index !== undefined) {
+      const start = toolLineMatch.index + (toolLineMatch[0].startsWith("\n") ? 1 : 0);
+      const safePrefix = stripLeakedToolText(buffer.slice(0, start));
+      const nl = buffer.indexOf("\n", start);
+      if (nl === -1) {
+        buffer = "";
+        droppingToolLine = !force;
+        return safePrefix;
+      }
+      buffer = buffer.slice(nl + 1);
+      return safePrefix + stripLeakedToolText(buffer);
+    }
     if (force) {
       const safe = markers.some((marker) => marker.startsWith(lower.trim())) ? "" : buffer;
       buffer = "";
