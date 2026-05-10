@@ -1422,6 +1422,16 @@ async function handleToolCalls(
   const validToolCalls = toolCalls.filter((tc) => tc?.function?.name);
   const allSearchResults: string[] = [];
   const allImages = new Set<string>();
+  const addImage = (raw: any) => {
+    const u = String(raw || "").trim();
+    if (!u || !/^https?:\/\//i.test(u)) return;
+    // Filter known broken / hotlink-blocked / tracking patterns
+    if (/\.svg(\?|$)/i.test(u)) return;
+    if (/(\b1x1\b|pixel\.gif|tracker|analytics|doubleclick|googletagmanager)/i.test(u)) return;
+    if (u.length > 1500) return;
+    // Many CDNs that work reliably with referrerPolicy=no-referrer
+    allImages.add(u);
+  };
   const allProducts: any[] = [];
   
   const pushStatus = (status: string) => {
