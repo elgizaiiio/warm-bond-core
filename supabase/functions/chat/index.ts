@@ -2239,6 +2239,17 @@ async function handleToolCalls(
     }
   }
 
+  if (isDeepResearch && allSearchResults.length === 0) {
+    const lastUser = (originalBody?.messages || []).slice().reverse().find((m: any) => m?.role === "user");
+    const userQuestion = typeof lastUser?.content === "string"
+      ? lastUser.content
+      : Array.isArray(lastUser?.content)
+        ? lastUser.content.map((p: any) => p?.text || "").join(" ").trim()
+        : "Deep research";
+    allSearchResults.push(`Research request: ${userQuestion}\nLive source collection returned no usable results in time. Write a careful, useful report from available general knowledge, clearly noting that source coverage is limited.`);
+    researchChannels.add("General knowledge fallback");
+  }
+
   if (allSearchResults.length > 0) {
     // CRITICAL: Send images FIRST before synthesis starts so user sees them immediately
     const images = Array.from(allImages);
