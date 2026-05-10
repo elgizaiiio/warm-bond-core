@@ -343,6 +343,7 @@ const ChatPage = () => {
         user_id: m.user_id,
         senderName: m.user_id ? senderMap[m.user_id]?.name : null,
         senderAvatar: m.user_id ? senderMap[m.user_id]?.avatar : null,
+        mode: m.role === "assistant" && (conv as any)?.mode === "research" ? "deep-research" : undefined,
       })));
       setTimeout(() => scrollToBottom(), 150);
     }
@@ -440,6 +441,7 @@ const ChatPage = () => {
     const imageAttachments = attachedFiles.filter((f) => f.type === "image");
     const fileAttachments = attachedFiles.filter((f) => f.type === "file");
     const localTurnId = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+    const assistantMessageIndex = editingIndex !== null ? editingIndex + 1 : messages.length + 1;
 
     const userMsg: Message = {
       role: "user",
@@ -513,6 +515,7 @@ const ChatPage = () => {
     let assistantContent = "";
     let assistantRenderTimer: ReturnType<typeof setTimeout> | null = null;
     let hasStartedResponse = false;
+    let hadStreamError = false;
     const controller = new AbortController();
     abortControllerRef.current = controller;
     let searchImages: string[] = [];
@@ -702,6 +705,7 @@ const ChatPage = () => {
         }
       },
       onDone: async () => {
+        if (hadStreamError) return;
         if (assistantRenderTimer) {
           clearTimeout(assistantRenderTimer);
           flushAssistantUpdate();
@@ -722,6 +726,19 @@ const ChatPage = () => {
         if (resolvedConversationId && assistantContent) {
           const aId = await saveMessage(resolvedConversationId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
           if (aId) ownInsertedIdsRef.current.add(aId);
+          if (isDeepResearch) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.from("research_reports").upsert({
+                user_id: user.id,
+                session_key: `conv_${resolvedConversationId}_${assistantMessageIndex}`,
+                query: userInput || "Deep Research",
+                report: assistantContent,
+                images: (searchImages.length > 0 ? searchImages : []) as any,
+                steps: [] as any,
+              } as any, { onConflict: "user_id,session_key" });
+            }
+          }
           setMessages((prev) => {
             const assistantIndex = prev.findIndex((m) => m.clientId === `assistant-${localTurnId}`);
             const targetIndex = assistantIndex >= 0 ? assistantIndex : prev.length - 1;
@@ -742,12 +759,38 @@ const ChatPage = () => {
         }
       },
       onError: (err) => {
+        hadStreamError = true;
         if (assistantRenderTimer) clearTimeout(assistantRenderTimer);
         toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");
         if (presenceChannelRef.current && chatUserId) {
           presenceChannelRef.current.send({ type: "broadcast", event: "ai_busy", payload: { user_id: chatUserId, busy: false } });
         }
-        setMessages((prev) => prev[prev.length - 1]?.role === "assistant" && !prev[prev.length - 1]?.content ? prev.slice(0, -1) : prev);
+        const fallbackContent = isDeepResearch && !assistantContent.trim()
+          ? "Deep Research stopped before the final report was generated. The request was saved — please try again in a moment."
+          : "";
+        if (fallbackContent) {
+          assistantContent = fallbackContent;
+          setMessages((prev) => prev.map((m) => m.clientId === `assistant-${localTurnId}` ? { ...m, content: fallbackContent } : m));
+        } else {
+          setMessages((prev) => prev[prev.length - 1]?.role === "assistant" && !prev[prev.length - 1]?.content ? prev.slice(0, -1) : prev);
+        }
+        void (async () => {
+          const contentToSave = assistantContent.trim();
+          const resolvedConversationId = await conversationPromise;
+          if (!resolvedConversationId || !contentToSave) return;
+          const aId = await saveMessage(resolvedConversationId, "assistant", contentToSave, searchImages.length > 0 ? searchImages : undefined);
+          if (aId) ownInsertedIdsRef.current.add(aId);
+          if (isDeepResearch && chatUserId) {
+            await supabase.from("research_reports").upsert({
+              user_id: chatUserId,
+              session_key: `conv_${resolvedConversationId}_${assistantMessageIndex}`,
+              query: userInput || "Deep Research",
+              report: contentToSave,
+              images: (searchImages.length > 0 ? searchImages : []) as any,
+              steps: [] as any,
+            } as any, { onConflict: "user_id,session_key" });
+          }
+        })();
         isSubmittingRef.current = false;
       },
       signal: controller.signal

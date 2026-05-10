@@ -58,6 +58,7 @@ export async function streamChat({
   signal?: AbortSignal;
 }) {
   try {
+    let completed = false;
     const resp = await fetch(CHAT_URL, {
       method: "POST",
       headers: {
@@ -126,6 +127,7 @@ export async function streamChat({
 
         const jsonStr = line.slice(6).trim();
         if (jsonStr === "[DONE]") {
+          completed = true;
           streamDone = true;
           break;
         }
@@ -145,7 +147,10 @@ export async function streamChat({
         if (raw.startsWith(":") || raw.trim() === "") continue;
         if (!raw.startsWith("data: ")) continue;
         const jsonStr = raw.slice(6).trim();
-        if (jsonStr === "[DONE]") continue;
+        if (jsonStr === "[DONE]") {
+          completed = true;
+          continue;
+        }
         try {
           handlePayload(JSON.parse(jsonStr));
         } catch {
@@ -154,6 +159,10 @@ export async function streamChat({
       }
     }
 
+    if (!completed && deepResearch) {
+      onError?.("Deep Research stopped before the report finished. Please try again.");
+      return;
+    }
     onDone();
   } catch (e: any) {
     if (e?.name === "AbortError") {

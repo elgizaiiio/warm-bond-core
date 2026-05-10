@@ -360,10 +360,12 @@ function buildForcedToolCalls({
   }
 
   if (needsSearch) {
-    calls.push(createSyntheticToolCall("BROWSE_WEBSITE", {
-      goal: `Search the live web for "${latestUserText}", visit the most relevant pages, gather accurate current information, and collect trustworthy sources.${isDeepResearch ? " Also collect relevant visuals when available." : ""}`,
-      url: explicitUrl || `https://www.google.com/search?q=${encodeURIComponent(latestUserText)}`,
-    }));
+    if (!isDeepResearch) {
+      calls.push(createSyntheticToolCall("BROWSE_WEBSITE", {
+        goal: `Search the live web for "${latestUserText}", visit the most relevant pages, gather accurate current information, and collect trustworthy sources.`,
+        url: explicitUrl || `https://www.google.com/search?q=${encodeURIComponent(latestUserText)}`,
+      }));
+    }
 
     if (hasSerper) {
       if (isDeepResearch) {
@@ -372,8 +374,6 @@ function buildForcedToolCalls({
           `${latestUserText} latest developments data statistics`,
           `${latestUserText} expert analysis case studies`,
           `${latestUserText} risks controversies limitations`,
-          `${latestUserText} comparison alternatives future outlook`,
-          `${latestUserText} practical examples implementation guide`,
         ].forEach((query) => {
           calls.push(createSyntheticToolCall("WEB_SEARCH", { query, include_images: true }));
         });
@@ -626,7 +626,7 @@ serve(async (req) => {
       wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText) || hasBrowserEscalation(latestUserText) || isShopping || isDeepResearch || needsSearch
     );
     const shouldLoadSerperKey = !isCasualMessage && (isDeepResearch || isShopping || wantsHamzaProfile || needsSearch);
-    const shouldLoadHyperbrowserKey = needsBrowserIntent;
+    const shouldLoadHyperbrowserKey = needsBrowserIntent && !isDeepResearch;
 
     const [SERPER_API_KEY, HB_API_KEY] = await Promise.all([
       shouldLoadSerperKey ? getSerperKey(sb) : Promise.resolve(null),
@@ -896,7 +896,7 @@ TEACHING RULES:
     }
 
     // Shopping forces a search flow without requiring Hyperbrowser. Deep research still needs HB for browser steps.
-    const shouldForceComputerFlow = !isFilesMode && !mentionsIntegrations && !wantsImageTool && !wantsVideoTool && !wantsVoiceTool && (isShopping || (!!HB_API_KEY && isDeepResearch));
+    const shouldForceComputerFlow = !isFilesMode && !mentionsIntegrations && !wantsImageTool && !wantsVideoTool && !wantsVoiceTool && (isShopping || isDeepResearch);
     const forcedToolCalls = shouldForceComputerFlow
       ? buildForcedToolCalls({
           latestUserText,
@@ -912,7 +912,15 @@ TEACHING RULES:
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         async start(controller) {
-          await handleToolCalls(controller, encoder, forcedToolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
+          try {
+            await handleToolCalls(controller, encoder, forcedToolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
+          } catch (e) {
+            console.error("forced tool flow error:", e);
+            const fallback = /[\u0600-\u06FF]/.test(latestUserText)
+              ? `# ${latestUserText}\n\nتعذّر إكمال جمع المصادر الحية هذه المرة، لكن تم حفظ المحادثة بشكل صحيح. حاول تشغيل Deep Research مرة أخرى بعد لحظات للحصول على التقرير الكامل.`
+              : `# ${latestUserText}\n\nLive source collection could not finish this time, but the conversation was saved correctly. Please run Deep Research again in a moment for the full report.`;
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: fallback } }] })}\n\n`));
+          }
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
         },
@@ -1035,7 +1043,17 @@ TEACHING RULES:
             const data = line.slice(6).trim();
             if (data === "[DONE]") {
               if (toolCalls.length > 0) {
-                await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
+                try {
+                  await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
+                } catch (e) {
+                  console.error("tool flow error:", e);
+                  if (isDeepResearch) {
+                    const fallback = /[\u0600-\u06FF]/.test(latestUserText)
+                      ? `# ${latestUserText}\n\nتعذّر إكمال جمع المصادر الحية هذه المرة، لكن تم حفظ المحادثة بشكل صحيح. حاول تشغيل Deep Research مرة أخرى بعد لحظات للحصول على التقرير الكامل.`
+                      : `# ${latestUserText}\n\nLive source collection could not finish this time, but the conversation was saved correctly. Please run Deep Research again in a moment for the full report.`;
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: fallback } }] })}\n\n`));
+                  }
+                }
               }
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();
@@ -1067,7 +1085,17 @@ TEACHING RULES:
         }
 
         if (toolCalls.length > 0) {
-          await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
+          try {
+            await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
+          } catch (e) {
+            console.error("tool flow error:", e);
+            if (isDeepResearch) {
+              const fallback = /[\u0600-\u06FF]/.test(latestUserText)
+                ? `# ${latestUserText}\n\nتعذّر إكمال جمع المصادر الحية هذه المرة، لكن تم حفظ المحادثة بشكل صحيح. حاول تشغيل Deep Research مرة أخرى بعد لحظات للحصول على التقرير الكامل.`
+                : `# ${latestUserText}\n\nLive source collection could not finish this time, but the conversation was saved correctly. Please run Deep Research again in a moment for the full report.`;
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: fallback } }] })}\n\n`));
+            }
+          }
         }
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
@@ -1137,11 +1165,10 @@ ${userContext}`;
 CRITICAL: Never introduce yourself. Never say "I'm Megsy" unless directly asked.
 
 DEEP RESEARCH MODE:
-- You MUST use the WEB_SEARCH tool 6-10 TIMES with different focused queries to gather exhaustive information.
+- You MUST use the WEB_SEARCH tool 3-4 TIMES with different focused queries to gather enough reliable information without delaying the user.
 - For EVERY search, set include_images=true to gather relevant visual content.
-- Cover: 1) General overview 2) Latest developments 3) Key data & expert opinions 4) Visual references 5) Controversies or debates 6) Historical context 7) risks 8) practical takeaways
+- Cover: 1) General overview 2) latest or key developments 3) data & expert opinions 4) risks, debates, and practical takeaways
 - While researching people, brands, celebrities, athletes, or public figures, ALWAYS gather photos.
-- If BROWSE_WEBSITE is available, use it to get live data from important sources.
 
 ABSOLUTE PRIVACY RULES (NEVER VIOLATE):
 - NEVER show tool names like WEB_SEARCH, BROWSE_WEBSITE, SHOPPING_SEARCH, GENERATE_IMAGE, etc.
@@ -1153,10 +1180,10 @@ ABSOLUTE PRIVACY RULES (NEVER VIOLATE):
 - Write as if YOU naturally know the information — present it confidently
 - The user should ONLY see the final polished research report
 
-CRITICAL OUTPUT RULES — MASSIVE REPORT:
-- You MUST write a MINIMUM of 3500-6000 words when the topic allows. This is NON-NEGOTIABLE.
+CRITICAL OUTPUT RULES — COMPLETE REPORT:
+- Write a detailed report that fits reliably in one response, usually 1600-2500 words when the topic allows.
 - The report must be comprehensive, detailed, and professional-grade.
-- NEVER abbreviate, shorten, or summarize. Write the FULL analysis.
+- Do not pad or repeat. Prioritize complete useful findings, clear analysis, and citations.
 - Each section must have multiple paragraphs with deep analysis.
 - ALWAYS synthesize and analyze ALL gathered information into ONE cohesive report.
 
@@ -1418,6 +1445,7 @@ async function handleToolCalls(
   const researchStartedAt = Date.now();
   const researchSourcesSet = new Set<string>();
   const researchChannels = new Set<string>();
+  let deepEnrichmentRuns = 0;
 
   // ── Deep Research: produce a REAL, query-specific plan via a planning AI call.
   // No templates. The model thinks about THIS specific question and writes the plan
@@ -1659,7 +1687,8 @@ async function handleToolCalls(
         }
 
         // ── Deep Research enrichment: layer multiple free open sources in parallel.
-        if (isDeepResearch) {
+        if (isDeepResearch && deepEnrichmentRuns < 1) {
+          deepEnrichmentRuns += 1;
           pushStatus("Consulting Wikipedia, arXiv, Reddit, Hacker News...");
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "multi_source_started", query: searchQuery })}\n\n`));
           const [wiki, arxiv, reddit, hn] = await Promise.allSettled([
@@ -1686,8 +1715,8 @@ async function handleToolCalls(
             emitTaskDone(auxId, `${e.results.length} results`);
           }
 
-          // Read top 2 organic links via Jina Reader for deeper content.
-          const topLinks: string[] = (searchData.organic || []).slice(0, 2).map((r: any) => r.link).filter(Boolean);
+          // Read the strongest organic link via Jina Reader for deeper content without risking timeout.
+          const topLinks: string[] = (searchData.organic || []).slice(0, 1).map((r: any) => r.link).filter(Boolean);
           if (topLinks.length > 0) {
             pushStatus("Reading top sources in depth...");
             const readIds = topLinks.map((u) => { const id = newTaskId(); emitTaskStart(id, "read", "Reading source in depth", u); return id; });
@@ -2237,6 +2266,17 @@ async function handleToolCalls(
     }
   }
 
+  if (isDeepResearch && allSearchResults.length === 0) {
+    const lastUser = (originalBody?.messages || []).slice().reverse().find((m: any) => m?.role === "user");
+    const userQuestion = typeof lastUser?.content === "string"
+      ? lastUser.content
+      : Array.isArray(lastUser?.content)
+        ? lastUser.content.map((p: any) => p?.text || "").join(" ").trim()
+        : "Deep research";
+    allSearchResults.push(`Research request: ${userQuestion}\nLive source collection returned no usable results in time. Write a careful, useful report from available general knowledge, clearly noting that source coverage is limited.`);
+    researchChannels.add("General knowledge fallback");
+  }
+
   if (allSearchResults.length > 0) {
     // CRITICAL: Send images FIRST before synthesis starts so user sees them immediately
     const images = Array.from(allImages);
@@ -2292,8 +2332,8 @@ async function handleToolCalls(
 - NEVER mention tool names, search queries, or internal steps.` 
         : isDeepResearch 
           ? `CRITICAL INSTRUCTIONS FOR DEEP RESEARCH REPORT:
-- Write an EXTREMELY detailed, comprehensive research report of AT LEAST 3500-6000 words when the topic allows.
-- The report must be a MASSIVE, professional-grade document — not a brief summary.
+- Write a detailed, comprehensive research report that fits reliably in one response, usually 1600-2500 words when the topic allows.
+- The report must be a professional-grade document — not a brief summary.
 - CRITICAL: Do NOT output markdown images or HTML images. The UI displays images separately.
 - LANGUAGE (MOST CRITICAL): DETECT the language of the user's ORIGINAL query and write the ENTIRE report in that EXACT language.
   * If the user wrote in English → write EVERYTHING in English
@@ -2302,11 +2342,11 @@ async function handleToolCalls(
   * If the user wrote in ANY other language → write EVERYTHING in that language
   * Do NOT default to Arabic. DETECT from the actual user text.
 - Structure with MANY sections and sub-sections:
-  ## Executive Summary (300+ words)
+  ## Executive Summary
   ## Research Map / Method (table or bullets)
-  ## Background & Context (300+ words)
-  ## Key Findings (700+ words with sub-sections)
-  ## Detailed Analysis (1200+ words with multiple sub-sections)
+  ## Background & Context
+  ## Key Findings
+  ## Detailed Analysis
   ## Data & Statistics (use tables for comparisons)
   ## Expert Opinions & Perspectives
   ## Risks, Limitations & Open Questions
@@ -2316,7 +2356,7 @@ async function handleToolCalls(
 - Do NOT include a "Sources", "References", or "Sources & References" section at the end. Cite sources INLINE only using [Source Name](URL) within the text.
 - Make it feel like a programmed research document: use **bold highlights**, inline code spans for important terms, blockquotes for insight callouts, bullet points (-), numbered lists, and tables extensively.
 - Do NOT show any raw search data, internal steps, or tool outputs.
-- Do NOT abbreviate or shorten. Write the FULL detailed report.`
+- Do not pad or repeat; make every section useful and complete.`
           : `Synthesize the information naturally and cite sources with [Source Name](URL). Match the user's language. Use bullet points (•) and dashes (-) for organized responses. Use bold for key points.`}` },
     ];
 
