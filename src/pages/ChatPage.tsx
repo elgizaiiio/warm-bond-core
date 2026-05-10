@@ -2137,6 +2137,17 @@ Ask me anything to get started!`;
                     transition={{ type: "spring", stiffness: 360, damping: 24 }}
                     className="flex gap-2 px-1 overflow-x-auto pb-1 scrollbar-thin"
                   >
+                    {!studySession?.active && (
+                      <motion.button
+                        whileTap={{ scale: 0.94 }}
+                        transition={{ type: "spring", stiffness: 380, damping: 22 }}
+                        onClick={() => setStudySession({ active: true, durationMin: 25, startedAt: Date.now(), topic: conversationTitle || "" })}
+                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 hover:bg-emerald-500/25 transition-colors text-emerald-300"
+                      >
+                        <Timer className="w-3.5 h-3.5" strokeWidth={2} />
+                        <span className="text-[12px] font-semibold">ابدأ جلسة 25د</span>
+                      </motion.button>
+                    )}
                     {[
                       { to: "/tools/exam-simulator", label: "Exams", Icon: ClipboardList, color: "text-rose-400", bg: "bg-rose-500/10" },
                       { to: "/tools/focus-room", label: "Focus", Icon: Timer, color: "text-blue-400", bg: "bg-blue-500/10" },
