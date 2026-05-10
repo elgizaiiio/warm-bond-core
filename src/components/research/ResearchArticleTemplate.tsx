@@ -23,16 +23,16 @@ const slugify = (s: string) =>
 
 const md = {
   h1: ({ node: _n, ...p }: any) => (
-    <h2 dir="auto" className="mt-16 mb-5 font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl" {...p} />
+    <h2 dir="auto" className="mt-10 mb-4 break-words font-display text-2xl font-semibold tracking-tight text-foreground sm:mt-16 sm:text-4xl" {...p} />
   ),
   h2: ({ node: _n, ...p }: any) => (
-    <h2 dir="auto" className="mt-16 mb-5 font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl" {...p} />
+    <h2 dir="auto" className="mt-10 mb-4 break-words font-display text-2xl font-semibold tracking-tight text-foreground sm:mt-16 sm:text-4xl" {...p} />
   ),
   h3: ({ node: _n, ...p }: any) => (
-    <h3 dir="auto" className="mt-10 mb-3 font-display text-xl font-semibold tracking-tight text-foreground sm:text-2xl" {...p} />
+    <h3 dir="auto" className="mt-8 mb-3 break-words font-display text-lg font-semibold tracking-tight text-foreground sm:mt-10 sm:text-2xl" {...p} />
   ),
   p: ({ node: _n, ...p }: any) => (
-    <p dir="auto" className="my-5 text-[17px] leading-[1.8] text-foreground/85" {...p} />
+    <p dir="auto" className="my-4 break-words text-[16px] leading-[1.85] text-foreground/85 sm:my-5 sm:text-[17px]" {...p} />
   ),
   ul: ({ node: _n, ...p }: any) => (
     <ul dir="auto" className="my-5 space-y-2 ps-5 list-disc marker:text-muted-foreground" {...p} />
@@ -41,12 +41,12 @@ const md = {
     <ol dir="auto" className="my-5 space-y-2 ps-5 list-decimal marker:text-muted-foreground" {...p} />
   ),
   li: ({ node: _n, ...p }: any) => (
-    <li dir="auto" className="text-[17px] leading-[1.75] text-foreground/85" {...p} />
+    <li dir="auto" className="break-words text-[16px] leading-[1.8] text-foreground/85 sm:text-[17px]" {...p} />
   ),
   blockquote: ({ node: _n, ...p }: any) => (
     <blockquote
       dir="auto"
-      className="my-8 border-s-2 border-primary ps-5 font-display text-xl italic text-foreground/90 sm:text-2xl"
+      className="my-6 border-s-2 border-primary ps-4 font-display text-lg italic text-foreground/90 sm:my-8 sm:ps-5 sm:text-2xl"
       {...p}
     />
   ),
