@@ -1185,6 +1185,11 @@ TEACHING RULES:
           }
         }
 
+        const tail = sanitize("", true);
+        if (tail) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: tail } }] })}\n\n`));
+        }
+
         if (toolCalls.length > 0) {
           try {
             await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
