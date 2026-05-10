@@ -142,6 +142,15 @@ export async function execExtraTool(name: string, args: Record<string, any>): Pr
       case "STACKOVERFLOW": return await stackOverflowSearch(args.query, args.limit || 5);
       case "NEWS_SEARCH": return await gdeltNews(args.query, args.limit || 8);
       case "MATH_SOLVER": return mathSolve(args.expression);
+      case "YOUTUBE_TRANSCRIPT": return await youtubeTranscript(args.url, args.lang || "en");
+      case "GOOGLE_SCHOLAR": return await googleScholar(args.query, args.limit || 5);
+      case "HACKERNEWS": return await hackerNews(args.query, args.limit || 5);
+      case "DUCKDUCKGO_INSTANT": return await ddgInstant(args.query);
+      case "URL_FETCH": return await urlFetch(args.url, args.max_chars || 4000);
+      case "OPEN_LIBRARY": return await openLibrary(args.query, args.limit || 5);
+      case "WORLD_BANK": return await worldBank(args.country, args.indicator);
+      case "CURRENCY_CONVERT": return await currencyConvert(args.from, args.to, args.amount || 1);
+      case "WEATHER": return await weather(args.location);
       default: return JSON.stringify({ error: `Unknown tool: ${name}` });
     }
   } catch (e) {
