@@ -104,6 +104,11 @@ const makeLeakedToolStreamSanitizer = () => {
   return (chunk: string, force = false) => {
     buffer += chunk;
     const lower = buffer.toLowerCase();
+    if (force) {
+      const safe = markers.some((marker) => marker.startsWith(lower.trim())) ? "" : buffer;
+      buffer = "";
+      return stripLeakedToolText(safe);
+    }
     if (!force) {
       const max = Math.min(80, buffer.length);
       for (let len = max; len > 0; len--) {
@@ -738,6 +743,10 @@ const ChatPage = () => {
       },
       onDone: async () => {
         if (hadStreamError) return;
+        const tail = sanitizeStreamChunk("", true);
+        if (tail) {
+          assistantContent += tail;
+        }
         if (assistantRenderTimer) {
           clearTimeout(assistantRenderTimer);
           flushAssistantUpdate();
