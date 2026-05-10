@@ -351,17 +351,22 @@ const ChatPage = () => {
         const { data: profs } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", senderIds as string[]);
         (profs || []).forEach((p: any) => { senderMap[p.id] = { name: p.display_name, avatar: p.avatar_url }; });
       }
-      setMessages(msgs.map((m: any) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-        images: m.images || undefined,
-        liked: m.liked,
-        id: m.id,
-        user_id: m.user_id,
-        senderName: m.user_id ? senderMap[m.user_id]?.name : null,
-        senderAvatar: m.user_id ? senderMap[m.user_id]?.avatar : null,
-        mode: m.role === "assistant" && (conv as any)?.mode === "research" ? "deep-research" : undefined,
-      })));
+      setMessages(msgs.map((m: any) => {
+        const role = m.role as "user" | "assistant";
+        const content = role === "assistant" ? sanitizeLeakedToolText(m.content) : m.content;
+        if (role === "assistant" && !content && !m.images?.length) return null;
+        return {
+          role,
+          content,
+          images: m.images || undefined,
+          liked: m.liked,
+          id: m.id,
+          user_id: m.user_id,
+          senderName: m.user_id ? senderMap[m.user_id]?.name : null,
+          senderAvatar: m.user_id ? senderMap[m.user_id]?.avatar : null,
+          mode: role === "assistant" && (conv as any)?.mode === "research" ? "deep-research" : undefined,
+        };
+      }).filter(Boolean) as Message[]);
       setTimeout(() => scrollToBottom(), 150);
     }
     // Load members for this conversation so names/avatars render correctly
