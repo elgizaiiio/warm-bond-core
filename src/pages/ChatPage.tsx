@@ -1893,7 +1893,7 @@ Ask me anything to get started!`;
                       tabIndex={0}
                       onClick={() => toggleEnabled(skill, !enabled)}
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleEnabled(skill, !enabled); } }}
-                      className={`w-full text-left px-3 py-2.5 rounded-2xl transition-colors cursor-pointer ${enabled ? "bg-primary/8 border border-primary/25" : "liquid-glass-hover border border-transparent"}`}
+                      className={`w-full text-left px-3 py-2.5 rounded-2xl transition-colors cursor-pointer ${enabled ? "bg-primary/10" : "hover:bg-muted/40"}`}
                     >
                       <div className="flex items-center gap-2">
                         <span className={`flex-1 text-[13.5px] font-semibold truncate ${enabled ? "text-foreground/95" : "text-foreground/60"}`}>{skill.name}</span>
