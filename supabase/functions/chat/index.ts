@@ -1790,12 +1790,7 @@ async function handleToolCalls(
           researchChannels.add("Web");
           emitTaskDone(searchTaskId, `${organicCount} results`);
           if (organicCount > 0) {
-            narrate(N(
-              `Great — I found ${organicCount} solid results. Reviewing them now…`,
-              `تمام، لقيت ${organicCount} نتيجة مفيدة. هراجعها دلوقتي…`,
-              `Super — ${organicCount} résultats solides trouvés. Je les analyse…`,
-              `Genial — encontré ${organicCount} resultados sólidos. Los estoy revisando…`
-            ));
+            await aiNarrate(`You just got ${organicCount} solid web results for "${searchQuery}". Tell the user you found them and are reviewing them now.`);
           }
         }
 
