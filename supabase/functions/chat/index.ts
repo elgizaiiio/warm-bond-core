@@ -2482,13 +2482,32 @@ async function handleToolCalls(
         continue;
       }
 
-      // Free knowledge tools (Wikipedia, arXiv, GitHub, Reddit, StackOverflow, GDELT News, MathSolver)
-      const EXTRA_TOOL_NAMES = new Set(["WIKIPEDIA", "ARXIV", "GITHUB_SEARCH", "REDDIT_SEARCH", "STACKOVERFLOW", "NEWS_SEARCH", "MATH_SOLVER"]);
+      // Free knowledge tools (Phase 1+3)
+      const EXTRA_TOOL_NAMES = new Set([
+        "WIKIPEDIA", "ARXIV", "GITHUB_SEARCH", "REDDIT_SEARCH", "STACKOVERFLOW", "NEWS_SEARCH", "MATH_SOLVER",
+        "YOUTUBE_TRANSCRIPT", "GOOGLE_SCHOLAR", "HACKERNEWS", "DUCKDUCKGO_INSTANT", "URL_FETCH",
+        "OPEN_LIBRARY", "WORLD_BANK", "CURRENCY_CONVERT", "WEATHER",
+      ]);
+      // Phase 4: execution & multimodal
+      const PHASE4_TOOL_NAMES = new Set([
+        "TRANSLATE", "IMAGE_VISION", "TRANSCRIBE_AUDIO", "TEXT_TO_SPEECH", "CSV_ANALYZE",
+      ]);
       if (EXTRA_TOOL_NAMES.has(toolName)) {
-        pushStatus(`Looking up ${toolName.toLowerCase().replace("_", " ")}...`);
+        pushStatus(`Looking up ${toolName.toLowerCase().replace(/_/g, " ")}...`);
         try {
           const { execExtraTool } = await import("../_shared/extra-tools.ts");
           const result = await execExtraTool(toolName, toolArgs);
+          allSearchResults.push(`${toolName} (${JSON.stringify(toolArgs).slice(0, 120)}):\n${result}`);
+        } catch (e) {
+          allSearchResults.push(`${toolName} failed: ${(e as Error).message}`);
+        }
+        continue;
+      }
+      if (PHASE4_TOOL_NAMES.has(toolName)) {
+        pushStatus(`Running ${toolName.toLowerCase().replace(/_/g, " ")}...`);
+        try {
+          const { execPhase4Tool } = await import("../_shared/extra-tools.ts");
+          const result = await execPhase4Tool(toolName, toolArgs);
           allSearchResults.push(`${toolName} (${JSON.stringify(toolArgs).slice(0, 120)}):\n${result}`);
         } catch (e) {
           allSearchResults.push(`${toolName} failed: ${(e as Error).message}`);
