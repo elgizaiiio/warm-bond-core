@@ -1836,7 +1836,58 @@ Ask me anything to get started!`;
                     </motion.button>
                   );
                 })}
+
+                {/* Upload your own track */}
+                <button
+                  type="button"
+                  disabled={uploadingMusic}
+                  onClick={() => musicFileInputRef.current?.click()}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-dashed border-emerald-500/40 hover:bg-emerald-500/5 transition-colors text-left disabled:opacity-60"
+                >
+                  {uploadingMusic
+                    ? <Loader2 className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400 animate-spin" />
+                    : <Plus className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={2} />}
+                  <span className="flex-1 text-[13.5px] text-foreground/90">{uploadingMusic ? "Uploading…" : "Upload your music"}</span>
+                </button>
+
+                {userTracks.length > 0 && (
+                  <>
+                    <div className="mt-2 px-3 text-[10px] uppercase tracking-wide text-muted-foreground/70">My tracks</div>
+                    {userTracks.map((track) => {
+                      const active = studyMusic.kind === track.name;
+                      return (
+                        <div
+                          key={track.id}
+                          className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-colors ${active ? "bg-emerald-500/10 border border-emerald-500/30" : "liquid-glass-hover border border-transparent"}`}
+                        >
+                          <button
+                            onClick={() => { playUserTrack(track); setPlusView("main"); }}
+                            className="flex-1 flex items-center gap-3 text-left min-w-0"
+                          >
+                            <Music2 className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={1.75} />
+                            <span className="flex-1 text-[13.5px] text-foreground/90 truncate">{track.name}</span>
+                            {active && <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={2.5} />}
+                          </button>
+                          <button
+                            onClick={() => deleteUserTrack(track)}
+                            className="w-7 h-7 flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+                            aria-label={`Delete ${track.name}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
               </div>
+              <input
+                ref={musicFileInputRef}
+                type="file"
+                accept="audio/*"
+                className="hidden"
+                onChange={handleMusicUpload}
+              />
             </motion.div>
           ) : plusView === "timer" ? (
             <motion.div
