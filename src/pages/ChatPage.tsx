@@ -1918,7 +1918,7 @@ Ask me anything to get started!`;
           onNewChat={handleNewChat}
           onSelectConversation={loadConversation}
           activeConversationId={conversationId}
-          currentMode="chat" />
+          currentMode={chatMode === "learning" ? "learning" : chatMode === "deep-research" ? "research" : chatMode === "shopping" ? "shopping" : "chat"} />
 
         {/* Header */}
         <div className="absolute top-0 inset-x-0 z-20 flex items-center gap-2 px-4 py-2.5 min-h-[56px] pointer-events-none [&>*]:pointer-events-auto">
