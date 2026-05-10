@@ -20,9 +20,6 @@ import { useSkills } from "@/hooks/useSkills";
 
 import DeepResearchToggle from "@/components/research/DeepResearchToggle";
 import LearnModeToggle from "@/components/learn/LearnModeToggle";
-import StudyTimer from "@/components/learn/StudyTimer";
-import StudyBuddy from "@/components/learn/StudyBuddy";
-import StudyMusic from "@/components/learn/StudyMusic";
 import AnimatedHeadline from "@/components/research/AnimatedHeadline";
 import ClarifyDialog, { type ClarifyQuestion } from "@/components/research/ClarifyDialog";
 import type { ResearchTask } from "@/components/research/ResearchTaskTimeline";
@@ -143,10 +140,6 @@ const ChatPage = () => {
   const [userPlan, setUserPlan] = useState<string>("free");
   const [computerUseEnabled, setComputerUseEnabled] = useState(true);
   const [chatMode, setChatMode] = useState<ChatMode>("normal");
-  // Learn Mode session state
-  const [studySession, setStudySession] = useState<{ active: boolean; durationMin: number; startedAt: number; topic: string } | null>(null);
-  const [studyBuddyMood, setStudyBuddyMood] = useState<"idle" | "happy" | "encourage" | "celebrate" | "thinking">("idle");
-  const studyFocus = chatMode === "learning" && !!studySession?.active;
   const [attachedFiles, setAttachedFiles] = useState<{name: string;type: string;data: string;}[]>([]);
   const [searchStatus, setSearchStatus] = useState<string>("");
   const [researchPlan, setResearchPlan] = useState<ResearchPlan | null>(null);
@@ -1793,42 +1786,7 @@ Ask me anything to get started!`;
       onNewChat={handleNewChat}
       activeConversationId={conversationId}>
       
-      <div className={`h-[100dvh] flex flex-col bg-background overflow-hidden transition-colors duration-500 ${studyFocus ? "learn-focus" : ""}`}>
-        {chatMode === "learning" && studySession?.active && (
-          <>
-            <div className="fixed top-2 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2">
-              <StudyTimer
-                durationMin={studySession.durationMin}
-                pomodoro
-                onEnd={async () => {
-                  setStudyBuddyMood("celebrate");
-                  try {
-                    const elapsed = Math.round((Date.now() - studySession.startedAt) / 60000);
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (user) {
-                      await supabase.from("learn_sessions").insert({
-                        user_id: user.id,
-                        conversation_id: conversationId,
-                        topic: studySession.topic || "جلسة مذاكرة",
-                        duration_min: elapsed,
-                      });
-                    }
-                  } catch (e) { console.warn("learn_sessions insert failed", e); }
-                  setTimeout(() => { setStudySession(null); setStudyBuddyMood("idle"); }, 4000);
-                }}
-                onStop={() => setStudySession(null)}
-              />
-              <StudyMusic autoStart={false} />
-              <button
-                onClick={() => setStudySession(null)}
-                className="text-[11px] px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-300 border border-rose-400/30 hover:bg-rose-500/20"
-              >
-                إنهاء
-              </button>
-            </div>
-            <StudyBuddy mood={studyBuddyMood} />
-          </>
-        )}
+      <div className="h-[100dvh] flex flex-col bg-background overflow-hidden">
         <AppSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -1922,12 +1880,12 @@ Ask me anything to get started!`;
                 transition={{ type: "spring", stiffness: 220, damping: 20 }}
                 className="relative inline-flex items-center gap-3"
               >
-                <div className={`absolute inset-0 -m-8 rounded-full blur-2xl animate-pulse ${chatMode === "deep-research" ? "bg-violet-500/20" : "bg-blue-500/15"}`} />
-                <PegtopIcon className={`relative w-9 h-9 md:w-10 md:h-10 ${chatMode === "deep-research" ? "text-violet-500 drop-shadow-[0_0_18px_rgba(139,92,246,0.7)]" : "text-blue-500 drop-shadow-[0_0_18px_rgba(59,130,246,0.7)]"}`} />
+                <div className={`absolute inset-0 -m-8 rounded-full blur-2xl animate-pulse ${chatMode === "deep-research" ? "bg-violet-500/20" : chatMode === "learning" ? "bg-emerald-500/20" : "bg-blue-500/15"}`} />
+                <PegtopIcon className={`relative w-9 h-9 md:w-10 md:h-10 ${chatMode === "deep-research" ? "text-violet-500 drop-shadow-[0_0_18px_rgba(139,92,246,0.7)]" : chatMode === "learning" ? "text-emerald-500 drop-shadow-[0_0_18px_rgba(16,185,129,0.7)]" : "text-blue-500 drop-shadow-[0_0_18px_rgba(59,130,246,0.7)]"}`} />
                 <AnimatedHeadline
-                  text={chatMode === "deep-research" ? "Research" : "Create"}
-                  highlight={chatMode === "deep-research" ? "deeply" : "something"}
-                  highlightColor={chatMode === "deep-research" ? "#8B5CF6" : "#3B82F6"}
+                  text={chatMode === "deep-research" ? "Research" : chatMode === "learning" ? "Learn" : "Create"}
+                  highlight={chatMode === "deep-research" ? "deeply" : chatMode === "learning" ? "anything" : "something"}
+                  highlightColor={chatMode === "deep-research" ? "#8B5CF6" : chatMode === "learning" ? "#10B981" : "#3B82F6"}
                 />
               </motion.div>
             </div>
@@ -2137,17 +2095,6 @@ Ask me anything to get started!`;
                     transition={{ type: "spring", stiffness: 360, damping: 24 }}
                     className="flex gap-2 px-1 overflow-x-auto pb-1 scrollbar-thin"
                   >
-                    {!studySession?.active && (
-                      <motion.button
-                        whileTap={{ scale: 0.94 }}
-                        transition={{ type: "spring", stiffness: 380, damping: 22 }}
-                        onClick={() => setStudySession({ active: true, durationMin: 25, startedAt: Date.now(), topic: conversationTitle || "" })}
-                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 hover:bg-emerald-500/25 transition-colors text-emerald-300"
-                      >
-                        <Timer className="w-3.5 h-3.5" strokeWidth={2} />
-                        <span className="text-[12px] font-semibold">ابدأ جلسة 25د</span>
-                      </motion.button>
-                    )}
                     {[
                       { to: "/tools/exam-simulator", label: "Exams", Icon: ClipboardList, color: "text-rose-400", bg: "bg-rose-500/10" },
                       { to: "/tools/focus-room", label: "Focus", Icon: Timer, color: "text-blue-400", bg: "bg-blue-500/10" },

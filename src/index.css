@@ -1427,21 +1427,3 @@ input, textarea, select {
 .research-report.dropcap--dark > p:first-of-type::first-letter {
   color: #fff;
 }
-
-/* Learn Mode focus session — soft tint + dim non-essential UI */
-.learn-focus {
-  background-image:
-    radial-gradient(60% 50% at 50% -10%, rgba(16, 185, 129, 0.12), transparent 60%),
-    radial-gradient(40% 35% at 100% 100%, rgba(59, 130, 246, 0.08), transparent 60%);
-}
-.learn-focus aside,
-.learn-focus [data-sidebar],
-.learn-focus [aria-label="Open menu"] {
-  opacity: 0.6;
-  transition: opacity 0.4s ease;
-}
-.learn-focus aside:hover,
-.learn-focus [data-sidebar]:hover,
-.learn-focus [aria-label="Open menu"]:hover {
-  opacity: 1;
-}
