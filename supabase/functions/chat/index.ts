@@ -360,10 +360,12 @@ function buildForcedToolCalls({
   }
 
   if (needsSearch) {
-    calls.push(createSyntheticToolCall("BROWSE_WEBSITE", {
-      goal: `Search the live web for "${latestUserText}", visit the most relevant pages, gather accurate current information, and collect trustworthy sources.${isDeepResearch ? " Also collect relevant visuals when available." : ""}`,
-      url: explicitUrl || `https://www.google.com/search?q=${encodeURIComponent(latestUserText)}`,
-    }));
+    if (!isDeepResearch) {
+      calls.push(createSyntheticToolCall("BROWSE_WEBSITE", {
+        goal: `Search the live web for "${latestUserText}", visit the most relevant pages, gather accurate current information, and collect trustworthy sources.`,
+        url: explicitUrl || `https://www.google.com/search?q=${encodeURIComponent(latestUserText)}`,
+      }));
+    }
 
     if (hasSerper) {
       if (isDeepResearch) {
@@ -372,8 +374,6 @@ function buildForcedToolCalls({
           `${latestUserText} latest developments data statistics`,
           `${latestUserText} expert analysis case studies`,
           `${latestUserText} risks controversies limitations`,
-          `${latestUserText} comparison alternatives future outlook`,
-          `${latestUserText} practical examples implementation guide`,
         ].forEach((query) => {
           calls.push(createSyntheticToolCall("WEB_SEARCH", { query, include_images: true }));
         });
