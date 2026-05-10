@@ -208,6 +208,14 @@ const ChatPage = () => {
     setNarrations((prev) => (prev[prev.length - 1] === t ? prev : [...prev, t]));
   }, []);
 
+  const buildInitialResearchNarration = useCallback((text: string) => {
+    const topic = (text || "Deep Research").trim().replace(/\s+/g, " ").slice(0, 90);
+    if (/[\u0600-\u06FF]/.test(topic)) {
+      return `تمام، فهمت إنك عايز بحث عميق عن: «${topic}». هبدأ أجمع المصادر الحقيقية وأقولك كل خطوة بتحصل.`;
+    }
+    return `Got it — you want deep research about: “${topic}”. I’ll start gathering real sources and keep you updated step by step.`;
+  }, []);
+
   // Fetch user info for memory + welcome message
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -366,7 +374,12 @@ const ChatPage = () => {
   };
 
   const handleModeChange = (mode: ChatMode) => {
-    setChatMode((prev) => prev === mode ? "normal" : mode);
+    const nextMode = chatMode === mode ? "normal" : mode;
+    setChatMode(nextMode);
+    if (nextMode !== "learning") {
+      setStudyTimers([]);
+      setStudyMusic({ kind: null });
+    }
     if (mode === "deep-research") {
       setSearchEnabled(true);
     } else if (mode !== "normal") {
