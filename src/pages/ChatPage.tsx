@@ -695,6 +695,7 @@ const ChatPage = () => {
           const aId = await saveMessage(resolvedConversationId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
           if (aId) ownInsertedIdsRef.current.add(aId);
           if (isDeepResearch) {
+            pushNarration(buildFinalResearchNarration(userInput));
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
               await supabase.from("research_reports").upsert({
