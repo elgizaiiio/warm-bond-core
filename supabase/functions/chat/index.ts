@@ -1422,6 +1422,16 @@ async function handleToolCalls(
   const validToolCalls = toolCalls.filter((tc) => tc?.function?.name);
   const allSearchResults: string[] = [];
   const allImages = new Set<string>();
+  const addImage = (raw: any) => {
+    const u = String(raw || "").trim();
+    if (!u || !/^https?:\/\//i.test(u)) return;
+    // Filter known broken / hotlink-blocked / tracking patterns
+    if (/\.svg(\?|$)/i.test(u)) return;
+    if (/(\b1x1\b|pixel\.gif|tracker|analytics|doubleclick|googletagmanager)/i.test(u)) return;
+    if (u.length > 1500) return;
+    // Many CDNs that work reliably with referrerPolicy=no-referrer
+    allImages.add(u);
+  };
   const allProducts: any[] = [];
   
   const pushStatus = (status: string) => {
@@ -1471,13 +1481,7 @@ async function handleToolCalls(
   // ── REAL AI-generated, streaming narration. Each milestone calls Gemini Flash Lite
   // and streams tokens to the client so the user sees the AI literally typing what it's doing,
   // in their exact language and dialect. No templates.
-  const narrationLangHint = isArabic
-    ? "Reply in casual Egyptian Arabic dialect (مصري دارج), one short sentence."
-    : isFrench
-      ? "Réponds en français familier, une seule courte phrase."
-      : isSpanish
-        ? "Responde en español coloquial, una sola frase corta."
-        : "Reply in casual conversational English, one short sentence.";
+  const narrationLangHint = "CRITICAL: Detect the EXACT language AND dialect/register the user wrote in (e.g. Modern Standard Arabic vs Egyptian vs Levantine vs Gulf vs Maghrebi, European vs Latin American Spanish, Brazilian vs European Portuguese, Hindi vs Hinglish, formal vs casual English, etc.) and reply in THAT exact same language and dialect. Mirror their tone and vocabulary. One short natural sentence.";
 
   const aiNarrate = async (intent: string) => {
     if (!isDeepResearch) return;
@@ -1686,7 +1690,7 @@ async function handleToolCalls(
 
               const productImages = products.filter((p: any) => p.image).map((p: any) => p.image);
               if (productImages.length > 0) {
-                productImages.forEach((img: string) => allImages.add(img));
+                productImages.forEach((img: string) => addImage(img));
               }
             }
           }
@@ -1773,12 +1777,12 @@ async function handleToolCalls(
         if (searchData.knowledgeGraph) {
           const kg = searchData.knowledgeGraph;
           context = `${kg.title || ""}\n${kg.description || ""}\n\n${context}`;
-          if (kg.imageUrl) allImages.add(kg.imageUrl);
+          if (kg.imageUrl) addImage(kg.imageUrl);
         }
 
         if (imageData?.images) {
           imageData.images.slice(0, isDeepResearch ? 4 : 3).forEach((img: any) => {
-            if (img.imageUrl) allImages.add(img.imageUrl);
+            if (img.imageUrl) addImage(img.imageUrl);
           });
         }
 

@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import { motion } from "framer-motion";
 import { ExternalLink } from "lucide-react";
 import { TemplateProps, splitIntoSections, hostname } from "./templateUtils";
+import SmartImage from "./SmartImage";
 
 /**
  * Editorial reading template inspired by leerob.com and Vercel's open-source blog.
@@ -167,7 +168,7 @@ const ResearchArticleTemplate = ({
             transition={{ duration: 0.7, delay: 0.1 }}
             className="mx-auto mb-12 max-w-[1100px] overflow-hidden sm:mb-16"
           >
-            <img src={cover} alt="" className="aspect-[16/9] w-full object-cover" loading="eager" />
+            <SmartImage src={cover} loading="eager" />
           </motion.figure>
         )}
 
@@ -229,7 +230,7 @@ const ResearchArticleTemplate = ({
                           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                           className="my-10 overflow-hidden"
                         >
-                          <img src={img} alt="" className="aspect-[16/9] w-full object-cover" loading="lazy" />
+                          <SmartImage src={img} loading="lazy" />
                         </motion.figure>
                       )}
                     </section>
