@@ -300,10 +300,7 @@ const ChatPage = () => {
     setConversationId(id);
     setSearchStatus("");
     setPendingQuestions([]);
-    researchTasksRef.current = [];
-    setResearchPlan(null);
-    setResearchTasks([]);
-    setResearchSummary(null);
+    setNarrations([]);
     setClarifyQs(null);
     setLoadingMessages(true);
     setMessages([]);
