@@ -31,6 +31,7 @@ interface AnimatedInputProps {
   selectedModel?: AgentModel | null;
   onModelSelect?: (model: AgentModel) => void;
   onModelRemove?: () => void;
+  accentMode?: "learn" | null;
 }
 
 const DEFAULT_PLACEHOLDERS = [
