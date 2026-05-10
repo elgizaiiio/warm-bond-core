@@ -37,9 +37,7 @@ interface ChatMessageProps {
   isDeepResearch?: boolean;
   researchQuery?: string;
   researchSessionKey?: string;
-  researchPlan?: ResearchPlan | null;
-  researchTasks?: ResearchTask[];
-  researchSummary?: ResearchSummary | null;
+  narrations?: string[];
   senderName?: string | null;
   senderAvatar?: string | null;
   isOtherMember?: boolean;
