@@ -1761,6 +1761,12 @@ async function handleToolCalls(
           const topLinks: string[] = (searchData.organic || []).slice(0, 1).map((r: any) => r.link).filter(Boolean);
           if (topLinks.length > 0) {
             pushStatus("Reading top sources in depth...");
+            narrate(N(
+              `Diving into the strongest source for full context…`,
+              `هغوص في أقوى مصدر علشان آخد السياق الكامل…`,
+              `Je plonge dans la meilleure source pour le contexte complet…`,
+              `Profundizando en la mejor fuente para tener el contexto completo…`
+            ));
             const readIds = topLinks.map((u) => { const id = newTaskId(); emitTaskStart(id, "read", "Reading source in depth", u); return id; });
             const reads = await Promise.allSettled(topLinks.map((u) => readWithJina(u)));
             reads.forEach((res, i) => {
