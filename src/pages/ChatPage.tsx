@@ -197,6 +197,9 @@ const ChatPage = () => {
   const [studyTimers, setStudyTimers] = useState<Array<{ id: string; totalSec: number; startedAt: number; paused: boolean; pausedRemaining: number | null }>>([]);
   const [timerInputMin, setTimerInputMin] = useState<number>(25);
   const studyAudioRef = useRef<HTMLAudioElement | null>(null);
+  const musicFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [userTracks, setUserTracks] = useState<Array<{ id: string; name: string; storage_path: string }>>([]);
+  const [uploadingMusic, setUploadingMusic] = useState(false);
   const [userIntegrations, setUserIntegrations] = useState<string[]>([]);
 
   const pushNarration = useCallback((text: string) => {
