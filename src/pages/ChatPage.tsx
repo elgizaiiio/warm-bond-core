@@ -89,6 +89,66 @@ const PegtopIcon = ({ className }: {className?: string;}) =>
 
 const MEGSY_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
 
+const stripLeakedToolText = (value: string) => String(value || "")
+  .replace(/```(?:tool_code|tool_call|function_call|python)?[\s\S]*?(?:default_api|tool_code|tool_call|function_call)[\s\S]*?(?:```|$)/gi, "")
+  .replace(/<tool_call[\s\S]*?(?:<\/tool_call>|$)/gi, "")
+  .replace(/<function_call[\s\S]*?(?:<\/function_call>|$)/gi, "")
+  .replace(/\$\{tool_code\}\s*/gi, "")
+  .replace(/(?:^|\n)[^\n]*(?:print\s*\(\s*)?default_api\.[^\n]*(?:\n|$)/gi, "\n");
+
+const sanitizeLeakedToolText = (value: string) => stripLeakedToolText(value).trim();
+
+const makeLeakedToolStreamSanitizer = () => {
+  let buffer = "";
+  let droppingToolLine = false;
+  const markers = ["${tool_code}", "print(default_api.", "default_api.", "<tool_call", "<function_call", "```tool_code", "```tool_call", "```function_call", "```python"];
+  return (chunk: string, force = false) => {
+    buffer += chunk;
+    const lower = buffer.toLowerCase();
+    if (droppingToolLine) {
+      const nl = buffer.indexOf("\n");
+      if (nl === -1) {
+        buffer = "";
+        return "";
+      }
+      buffer = buffer.slice(nl + 1);
+      droppingToolLine = false;
+    }
+    const toolLineMatch = buffer.match(/(?:^|\n)[^\n]*(?:\$\{tool_code\}|default_api\.|print\s*\(\s*default_api\.)/i);
+    if (toolLineMatch && toolLineMatch.index !== undefined) {
+      const start = toolLineMatch.index + (toolLineMatch[0].startsWith("\n") ? 1 : 0);
+      const safePrefix = stripLeakedToolText(buffer.slice(0, start));
+      const nl = buffer.indexOf("\n", start);
+      if (nl === -1) {
+        buffer = "";
+        droppingToolLine = !force;
+        return safePrefix;
+      }
+      buffer = buffer.slice(nl + 1);
+      return safePrefix + stripLeakedToolText(buffer);
+    }
+    if (force) {
+      const safe = markers.some((marker) => marker.startsWith(lower.trim())) ? "" : buffer;
+      buffer = "";
+      return stripLeakedToolText(safe);
+    }
+    if (!force) {
+      const max = Math.min(80, buffer.length);
+      for (let len = max; len > 0; len--) {
+        const suffix = lower.slice(-len);
+        if (markers.some((marker) => marker.startsWith(suffix))) {
+          const safe = buffer.slice(0, -len);
+          buffer = buffer.slice(-len);
+          return stripLeakedToolText(safe);
+        }
+      }
+    }
+    const safe = buffer;
+    buffer = "";
+    return stripLeakedToolText(safe);
+  };
+};
+
 const normalizeStatusLabel = (status: string) => {
   if (!status.trim()) return "";
   const lower = status.toLowerCase();
@@ -343,17 +403,22 @@ const ChatPage = () => {
         const { data: profs } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", senderIds as string[]);
         (profs || []).forEach((p: any) => { senderMap[p.id] = { name: p.display_name, avatar: p.avatar_url }; });
       }
-      setMessages(msgs.map((m: any) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-        images: m.images || undefined,
-        liked: m.liked,
-        id: m.id,
-        user_id: m.user_id,
-        senderName: m.user_id ? senderMap[m.user_id]?.name : null,
-        senderAvatar: m.user_id ? senderMap[m.user_id]?.avatar : null,
-        mode: m.role === "assistant" && (conv as any)?.mode === "research" ? "deep-research" : undefined,
-      })));
+      setMessages(msgs.map((m: any) => {
+        const role = m.role as "user" | "assistant";
+        const content = role === "assistant" ? sanitizeLeakedToolText(m.content) : m.content;
+        if (role === "assistant" && !content && !m.images?.length) return null;
+        return {
+          role,
+          content,
+          images: m.images || undefined,
+          liked: m.liked,
+          id: m.id,
+          user_id: m.user_id,
+          senderName: m.user_id ? senderMap[m.user_id]?.name : null,
+          senderAvatar: m.user_id ? senderMap[m.user_id]?.avatar : null,
+          mode: role === "assistant" && (conv as any)?.mode === "research" ? "deep-research" : undefined,
+        };
+      }).filter(Boolean) as Message[]);
       setTimeout(() => scrollToBottom(), 150);
     }
     // Load members for this conversation so names/avatars render correctly
@@ -534,6 +599,7 @@ const ChatPage = () => {
     abortControllerRef.current = controller;
     let searchImages: string[] = [];
     let streamedProducts: ProductResult[] = [];
+    const sanitizeStreamChunk = makeLeakedToolStreamSanitizer();
 
     const isToolMarkerChunk = (chunk: string) => {
       const trimmed = chunk.trim();
@@ -578,13 +644,15 @@ const ChatPage = () => {
 
     const updateAssistant = (chunk: string) => {
       if (isToolMarkerChunk(chunk)) return;
+      const safeChunk = sanitizeStreamChunk(chunk);
+      if (!safeChunk.trim()) return;
       if (!hasStartedResponse) {
         hasStartedResponse = true;
         setIsThinking(false);
         setSearchStatus("");
       }
       const wasEmpty = assistantContent.length === 0;
-      assistantContent += chunk;
+      assistantContent += safeChunk;
       scheduleAssistantUpdate(wasEmpty);
     };
 
@@ -605,7 +673,7 @@ const ChatPage = () => {
         }
         return { role: m.role, content };
       }
-      return { role: m.role, content: m.content };
+      return { role: m.role, content: m.role === "assistant" ? sanitizeLeakedToolText(m.content) : m.content };
     });
 
     if (currentFiles.some((f) => f.type === "file")) {
@@ -698,6 +766,10 @@ const ChatPage = () => {
       },
       onDone: async () => {
         if (hadStreamError) return;
+        const tail = sanitizeStreamChunk("", true);
+        if (tail.trim()) {
+          assistantContent += tail;
+        }
         if (assistantRenderTimer) {
           clearTimeout(assistantRenderTimer);
           flushAssistantUpdate();

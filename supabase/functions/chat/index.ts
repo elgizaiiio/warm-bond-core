@@ -292,19 +292,60 @@ function isToolMarkerChunk(content: string): boolean {
 function makeStreamSanitizer() {
   let buf = "";
   let inForbiddenFence = false;
+  let droppingToolLine = false;
+  const dangerousMarkers = [
+    "${tool_code}",
+    "print(default_api.",
+    "default_api.",
+    "<tool_call",
+    "<function_call",
+    "```tool_code",
+    "```tool_call",
+    "```function_call",
+    "```python",
+  ];
   // Open patterns that always trigger a drop until the closing ```
   const FORBIDDEN_FENCE_RE = /```(?:tool_code|tool_call|function_call|python\s*\n[\s\S]*?default_api)/i;
   const stripInline = (s: string) =>
     s
+      .replace(/```(?:tool_code|tool_call|function_call|python)?[\s\S]*?(?:default_api|tool_code|tool_call|function_call)[\s\S]*?```/gi, "")
+      .replace(/<tool_call[\s\S]*?<\/tool_call>/gi, "")
+      .replace(/<function_call[\s\S]*?<\/function_call>/gi, "")
       .replace(/<\/?(?:tool_code|tool_call|function_call)[^>]*>/gi, "")
-      .replace(/^\s*print\s*\(\s*default_api\.[^\n]*\)\s*$/gim, "")
-      .replace(/^\s*default_api\.[a-z_]+\s*\([^\n]*\)\s*$/gim, "")
-      .replace(/\$\{tool_code\}/gi, "");
+      .replace(/\$\{tool_code\}\s*/gi, "")
+      .replace(/(?:^|\n)[^\n]*(?:print\s*\(\s*)?default_api\.[^\n]*(?:\n|$)/gi, "\n");
 
-  return (chunk: string): string => {
+  const splitHold = (s: string, force = false) => {
+    const lower = s.toLowerCase();
+    if (force) {
+      return dangerousMarkers.some((marker) => marker.startsWith(lower.trim()))
+        ? { safe: "", hold: "" }
+        : { safe: s, hold: "" };
+    }
+    const max = Math.min(80, s.length);
+    for (let len = max; len > 0; len--) {
+      const suffix = lower.slice(-len);
+      if (dangerousMarkers.some((marker) => marker.startsWith(suffix))) {
+        return { safe: s.slice(0, -len), hold: s.slice(-len) };
+      }
+    }
+    return { safe: s, hold: "" };
+  };
+
+  return (chunk: string, force = false): string => {
     buf += chunk;
     let out = "";
     while (buf.length > 0) {
+      if (droppingToolLine) {
+        const nl = buf.indexOf("\n");
+        if (nl === -1) {
+          buf = "";
+          return out;
+        }
+        buf = buf.slice(nl + 1);
+        droppingToolLine = false;
+        continue;
+      }
       if (inForbiddenFence) {
         const close = buf.indexOf("```");
         if (close === -1) {
@@ -326,10 +367,24 @@ function makeStreamSanitizer() {
           return out;
         }
       }
+      const toolLineMatch = buf.match(/(?:^|\n)[^\n]*(?:\$\{tool_code\}|default_api\.|print\s*\(\s*default_api\.)/i);
+      if (toolLineMatch && toolLineMatch.index !== undefined) {
+        const start = toolLineMatch.index + (toolLineMatch[0].startsWith("\n") ? 1 : 0);
+        out += stripInline(buf.slice(0, start));
+        const nl = buf.indexOf("\n", start);
+        if (nl === -1) {
+          buf = "";
+          droppingToolLine = !force;
+          return out;
+        }
+        buf = buf.slice(nl + 1);
+        continue;
+      }
       const m = buf.match(FORBIDDEN_FENCE_RE);
       if (!m || m.index === undefined) {
-        out += stripInline(buf);
-        buf = "";
+        const { safe, hold } = splitHold(buf, force);
+        out += stripInline(safe);
+        buf = hold;
         return out;
       }
       out += stripInline(buf.slice(0, m.index));
@@ -338,6 +393,18 @@ function makeStreamSanitizer() {
     }
     return out;
   };
+}
+
+function sanitizeAssistantHistoryMessage(message: any) {
+  if (!message || message.role !== "assistant" || typeof message.content !== "string") return message;
+  const cleaned = message.content
+    .replace(/```(?:tool_code|tool_call|function_call|python)?[\s\S]*?(?:default_api|tool_code|tool_call|function_call)[\s\S]*?(?:```|$)/gi, "")
+    .replace(/<tool_call[\s\S]*?(?:<\/tool_call>|$)/gi, "")
+    .replace(/<function_call[\s\S]*?(?:<\/function_call>|$)/gi, "")
+    .replace(/\$\{tool_code\}\s*/gi, "")
+    .replace(/(?:^|\n)[^\n]*(?:print\s*\(\s*)?default_api\.[^\n]*(?:\n|$)/gi, "\n")
+    .trim();
+  return { ...message, content: cleaned };
 }
 
 function normalizeRequestedModel(rawModel: string | null): string | null {
@@ -940,12 +1007,15 @@ TEACHING RULES:
     const trimmedMessages = Array.isArray(messages) && messages.length > (isCasualMessage ? 4 : 6)
       ? messages.slice(isCasualMessage ? -4 : -6)
       : messages;
+    const cleanTrimmedMessages = trimmedMessages
+      .map(sanitizeAssistantHistoryMessage)
+      .filter((m: any) => m?.role !== "assistant" || typeof m.content !== "string" ? true : m.content.trim().length > 0);
 
     const body: any = {
       model: normalizeModelForProvider(modelId, provider),
       messages: isCasualMessage 
-        ? [{ role: "system", content: `You are Megsy v1 (${MEGSY_TIERS[effectiveTier].label}) by Megsy AI. Reply briefly, warmly, and naturally. Match the user's exact language. Never mention model providers.${userContext}` }, ...trimmedMessages]
-        : [{ role: "system", content: systemPrompt }, ...trimmedMessages],
+        ? [{ role: "system", content: `You are Megsy v1 (${MEGSY_TIERS[effectiveTier].label}) by Megsy AI. Reply briefly, warmly, and naturally. Match the user's exact language. Never mention model providers.${userContext}` }, ...cleanTrimmedMessages]
+        : [{ role: "system", content: systemPrompt }, ...cleanTrimmedMessages],
       stream: true,
       max_tokens: isCasualMessage ? 150 : (isDeepResearch ? 10000 : (mode === "files" ? 4096 : 2048)),
       temperature: isCasualMessage ? 0.2 : 0.5,
@@ -1156,6 +1226,11 @@ TEACHING RULES:
               // Skip malformed JSON
             }
           }
+        }
+
+        const tail = sanitize("", true);
+        if (tail) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: tail } }] })}\n\n`));
         }
 
         if (toolCalls.length > 0) {
@@ -2639,6 +2714,11 @@ async function handleToolCalls(
             }
           } catch { continue; }
         }
+      }
+      const tail = sanitize("", true);
+      if (tail) {
+        streamed = true;
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: tail } }] })}\n\n`));
       }
       return { ok: true, streamed };
     };
