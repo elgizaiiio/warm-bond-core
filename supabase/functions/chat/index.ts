@@ -1690,7 +1690,7 @@ async function handleToolCalls(
 
               const productImages = products.filter((p: any) => p.image).map((p: any) => p.image);
               if (productImages.length > 0) {
-                productImages.forEach((img: string) => allImages.add(img));
+                productImages.forEach((img: string) => addImage(img));
               }
             }
           }
@@ -1777,12 +1777,12 @@ async function handleToolCalls(
         if (searchData.knowledgeGraph) {
           const kg = searchData.knowledgeGraph;
           context = `${kg.title || ""}\n${kg.description || ""}\n\n${context}`;
-          if (kg.imageUrl) allImages.add(kg.imageUrl);
+          if (kg.imageUrl) addImage(kg.imageUrl);
         }
 
         if (imageData?.images) {
           imageData.images.slice(0, isDeepResearch ? 4 : 3).forEach((img: any) => {
-            if (img.imageUrl) allImages.add(img.imageUrl);
+            if (img.imageUrl) addImage(img.imageUrl);
           });
         }
 
