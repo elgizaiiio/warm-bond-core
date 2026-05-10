@@ -816,6 +816,26 @@ const ChatPage = () => {
           const dbMode = chatMode === "deep-research" ? "research" : (chatMode === "learning" ? "learning" : (chatMode === "shopping" ? "shopping" : "chat"));
           await supabase.from("conversations").update({ updated_at: new Date().toISOString(), mode: dbMode } as any).eq("id", resolvedConversationId);
           window.dispatchEvent(new CustomEvent("megsy:conversations-changed"));
+          // Phase 2: passive memory + KG extraction (fire-and-forget)
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.access_token && assistantContent && userInput) {
+              fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-extract-memory`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${session.access_token}`,
+                  "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                },
+                body: JSON.stringify({
+                  user_message: userInput,
+                  assistant_reply: assistantContent.slice(0, 4000),
+                  conversation_id: resolvedConversationId,
+                  message_id: aId,
+                }),
+              }).catch(() => {});
+            }
+          } catch { /* ignore */ }
         }
       },
       onError: (err) => {
