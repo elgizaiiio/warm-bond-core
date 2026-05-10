@@ -279,6 +279,67 @@ function isToolMarkerChunk(content: string): boolean {
   ].includes(content.trim());
 }
 
+/**
+ * Stateful sanitizer for streamed assistant content.
+ * Strips:
+ *  - ```tool_code ... ``` fenced blocks (Gemini leaks these)
+ *  - ```python ... print(default_api...) ... ``` blocks
+ *  - bare `print(default_api...)` lines
+ *  - `default_api.<tool>(...)` invocations
+ *  - `<tool_call>...</tool_call>` and `<function_call>` XML-style leaks
+ * Buffers across chunk boundaries so partial fences are safely held.
+ */
+function makeStreamSanitizer() {
+  let buf = "";
+  let inForbiddenFence = false;
+  // Open patterns that always trigger a drop until the closing ```
+  const FORBIDDEN_FENCE_RE = /```(?:tool_code|tool_call|function_call|python\s*\n[\s\S]*?default_api)/i;
+  const stripInline = (s: string) =>
+    s
+      .replace(/<\/?(?:tool_code|tool_call|function_call)[^>]*>/gi, "")
+      .replace(/^\s*print\s*\(\s*default_api\.[^\n]*\)\s*$/gim, "")
+      .replace(/^\s*default_api\.[a-z_]+\s*\([^\n]*\)\s*$/gim, "")
+      .replace(/\$\{tool_code\}/gi, "");
+
+  return (chunk: string): string => {
+    buf += chunk;
+    let out = "";
+    while (buf.length > 0) {
+      if (inForbiddenFence) {
+        const close = buf.indexOf("```");
+        if (close === -1) {
+          // wait for more
+          return out;
+        }
+        buf = buf.slice(close + 3);
+        inForbiddenFence = false;
+        continue;
+      }
+      // Hold buffer if it ends with a partial fence that might become forbidden
+      const lastTick = buf.lastIndexOf("```");
+      if (lastTick !== -1) {
+        const after = buf.slice(lastTick);
+        // if the opener could match a forbidden pattern but isn't complete yet, hold
+        if (after.length < 60 && /^```[a-zA-Z_]*$/.test(after.trim())) {
+          out += stripInline(buf.slice(0, lastTick));
+          buf = after;
+          return out;
+        }
+      }
+      const m = buf.match(FORBIDDEN_FENCE_RE);
+      if (!m || m.index === undefined) {
+        out += stripInline(buf);
+        buf = "";
+        return out;
+      }
+      out += stripInline(buf.slice(0, m.index));
+      buf = buf.slice(m.index + m[0].length);
+      inForbiddenFence = true;
+    }
+    return out;
+  };
+}
+
 function normalizeRequestedModel(rawModel: string | null): string | null {
   if (!rawModel || rawModel === "auto") return null;
   return rawModel;
