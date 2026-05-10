@@ -1043,7 +1043,11 @@ TEACHING RULES:
             const data = line.slice(6).trim();
             if (data === "[DONE]") {
               if (toolCalls.length > 0) {
-                await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
+                try {
+                  await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
+                } catch (e) {
+                  console.error("tool flow error:", e);
+                }
               }
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();
@@ -1075,7 +1079,11 @@ TEACHING RULES:
         }
 
         if (toolCalls.length > 0) {
-          await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
+          try {
+            await handleToolCalls(controller, encoder, toolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
+          } catch (e) {
+            console.error("tool flow error:", e);
+          }
         }
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
