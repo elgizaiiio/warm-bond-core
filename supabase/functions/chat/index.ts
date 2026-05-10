@@ -1007,12 +1007,15 @@ TEACHING RULES:
     const trimmedMessages = Array.isArray(messages) && messages.length > (isCasualMessage ? 4 : 6)
       ? messages.slice(isCasualMessage ? -4 : -6)
       : messages;
+    const cleanTrimmedMessages = trimmedMessages
+      .map(sanitizeAssistantHistoryMessage)
+      .filter((m: any) => m?.role !== "assistant" || typeof m.content !== "string" ? true : m.content.trim().length > 0);
 
     const body: any = {
       model: normalizeModelForProvider(modelId, provider),
       messages: isCasualMessage 
-        ? [{ role: "system", content: `You are Megsy v1 (${MEGSY_TIERS[effectiveTier].label}) by Megsy AI. Reply briefly, warmly, and naturally. Match the user's exact language. Never mention model providers.${userContext}` }, ...trimmedMessages]
-        : [{ role: "system", content: systemPrompt }, ...trimmedMessages],
+        ? [{ role: "system", content: `You are Megsy v1 (${MEGSY_TIERS[effectiveTier].label}) by Megsy AI. Reply briefly, warmly, and naturally. Match the user's exact language. Never mention model providers.${userContext}` }, ...cleanTrimmedMessages]
+        : [{ role: "system", content: systemPrompt }, ...cleanTrimmedMessages],
       stream: true,
       max_tokens: isCasualMessage ? 150 : (isDeepResearch ? 10000 : (mode === "files" ? 4096 : 2048)),
       temperature: isCasualMessage ? 0.2 : 0.5,
