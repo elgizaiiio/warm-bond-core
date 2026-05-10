@@ -292,6 +292,7 @@ function isToolMarkerChunk(content: string): boolean {
 function makeStreamSanitizer() {
   let buf = "";
   let inForbiddenFence = false;
+  let droppingToolLine = false;
   const dangerousMarkers = [
     "${tool_code}",
     "print(default_api.",
@@ -335,6 +336,16 @@ function makeStreamSanitizer() {
     buf += chunk;
     let out = "";
     while (buf.length > 0) {
+      if (droppingToolLine) {
+        const nl = buf.indexOf("\n");
+        if (nl === -1) {
+          buf = "";
+          return out;
+        }
+        buf = buf.slice(nl + 1);
+        droppingToolLine = false;
+        continue;
+      }
       if (inForbiddenFence) {
         const close = buf.indexOf("```");
         if (close === -1) {
@@ -355,6 +366,19 @@ function makeStreamSanitizer() {
           buf = after;
           return out;
         }
+      }
+      const toolLineMatch = buf.match(/(?:^|\n)[^\n]*(?:\$\{tool_code\}|default_api\.|print\s*\(\s*default_api\.)/i);
+      if (toolLineMatch && toolLineMatch.index !== undefined) {
+        const start = toolLineMatch.index + (toolLineMatch[0].startsWith("\n") ? 1 : 0);
+        out += stripInline(buf.slice(0, start));
+        const nl = buf.indexOf("\n", start);
+        if (nl === -1) {
+          buf = "";
+          droppingToolLine = !force;
+          return out;
+        }
+        buf = buf.slice(nl + 1);
+        continue;
       }
       const m = buf.match(FORBIDDEN_FENCE_RE);
       if (!m || m.index === undefined) {
