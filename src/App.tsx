@@ -114,10 +114,6 @@ const KaraokeSeparatorPage = lazy(() => import("./pages/voice/KaraokeSeparatorPa
 const PodcastEditorPage = lazy(() => import("./pages/voice/PodcastEditorPage"));
 const AudioRestorationPage = lazy(() => import("./pages/voice/AudioRestorationPage"));
 const AudioTranscriptionPage = lazy(() => import("./pages/voice/AudioTranscriptionPage"));
-const SmartNotesPage = lazy(() => import("./pages/tools/SmartNotesPage"));
-const ExamSimulatorPage = lazy(() => import("./pages/tools/ExamSimulatorPage"));
-const StudyPlannerPage = lazy(() => import("./pages/tools/StudyPlannerPage"));
-const FocusRoomPage = lazy(() => import("./pages/tools/FocusRoomPage"));
 const SkillsSettingsPage = lazy(() => import("./pages/SkillsSettingsPage"));
 const SkillsNewPage = lazy(() => import("./pages/SkillsNewPage"));
 
