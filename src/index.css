@@ -1428,11 +1428,6 @@ input, textarea, select {
   color: #fff;
 }
 
-/* Learn Mode focus session — soft tint + dim non-essential UI */
-.learn-focus {
-  background-image:
-    radial-gradient(60% 50% at 50% -10%, rgba(16, 185, 129, 0.12), transparent 60%),
-    radial-gradient(40% 35% at 100% 100%, rgba(59, 130, 246, 0.08), transparent 60%);
 }
 .learn-focus aside,
 .learn-focus [data-sidebar],
