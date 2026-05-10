@@ -2168,6 +2168,30 @@ Ask me anything to get started!`;
                 </motion.div>
                 );
               })}
+              {/* In-chat focus timers */}
+              <AnimatePresence>
+                {studyTimers.map((t) => (
+                  <InChatTimerCard
+                    key={t.id}
+                    id={t.id}
+                    totalSec={t.totalSec}
+                    startedAt={t.startedAt}
+                    paused={t.paused}
+                    pausedRemaining={t.pausedRemaining}
+                    onPauseToggle={(id) => setStudyTimers((prev) => prev.map((x) => {
+                      if (x.id !== id) return x;
+                      if (x.paused) {
+                        const remaining = x.pausedRemaining ?? x.totalSec;
+                        return { ...x, paused: false, startedAt: Date.now() - (x.totalSec - remaining) * 1000, pausedRemaining: null };
+                      }
+                      const remaining = Math.max(0, x.totalSec - Math.floor((Date.now() - x.startedAt) / 1000));
+                      return { ...x, paused: true, pausedRemaining: remaining };
+                    }))}
+                    onCancel={(id) => setStudyTimers((prev) => prev.filter((x) => x.id !== id))}
+                  />
+                ))}
+              </AnimatePresence>
+
               {/* System events (join/leave) */}
               <AnimatePresence>
                 {systemEvents.slice(-3).map((ev) => (
