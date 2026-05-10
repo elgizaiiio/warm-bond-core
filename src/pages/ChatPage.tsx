@@ -23,9 +23,6 @@ import LearnModeToggle from "@/components/learn/LearnModeToggle";
 import InChatTimerCard from "@/components/learn/InChatTimerCard";
 import AnimatedHeadline from "@/components/research/AnimatedHeadline";
 import ClarifyDialog, { type ClarifyQuestion } from "@/components/research/ClarifyDialog";
-import type { ResearchTask } from "@/components/research/ResearchTaskTimeline";
-import type { ResearchPlan } from "@/components/research/ResearchPlanCard";
-import type { ResearchSummary } from "@/components/research/ResearchSummaryCard";
 import ConnectorsDialog from "@/components/ConnectorsDialog";
 import GlowButton from "@/components/GlowButton";
 
