@@ -597,9 +597,6 @@ const ChatPage = () => {
     // Mode prompts are now handled server-side via chatMode parameter
     const isDeepResearch = chatMode === "deep-research";
     if (isDeepResearch) {
-      const seedTask: ResearchTask = { id: "start", kind: "search", label: "Preparing deep research...", target: userInput.slice(0, 80), status: "running" };
-      researchTasksRef.current = [seedTask];
-      setResearchTasks([seedTask]);
       setSearchStatus("Preparing deep research...");
     }
 
