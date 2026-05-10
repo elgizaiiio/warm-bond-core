@@ -11,9 +11,7 @@ import InfoCards from "./InfoCards";
 import CodePreviewModal from "./CodePreviewModal";
 import ImagePreviewModal from "./ImagePreviewModal";
 import DeepResearchCard from "./chat/DeepResearchCard";
-import ResearchTaskTimeline, { type ResearchTask } from "./research/ResearchTaskTimeline";
-import ResearchPlanCard, { type ResearchPlan } from "./research/ResearchPlanCard";
-import ResearchSummaryCard, { type ResearchSummary } from "./research/ResearchSummaryCard";
+import ResearchNarration from "./research/ResearchNarration";
 import { detectLang, langDir } from "@/lib/detectLang";
 import LearnCard from "./learn/LearnCard";
 import { parseLearnSegments, hasLearnCards } from "@/lib/learnCardParser";
@@ -39,9 +37,7 @@ interface ChatMessageProps {
   isDeepResearch?: boolean;
   researchQuery?: string;
   researchSessionKey?: string;
-  researchPlan?: ResearchPlan | null;
-  researchTasks?: ResearchTask[];
-  researchSummary?: ResearchSummary | null;
+  narrations?: string[];
   senderName?: string | null;
   senderAvatar?: string | null;
   isOtherMember?: boolean;
@@ -422,7 +418,7 @@ const UserMarkdown = ({ content, onLinkClick }: { content: string; onLinkClick: 
   </ReactMarkdown>
 );
 
-const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, images, products, attachedImages, attachedFiles, onLike, onLikeMessage, liked, onShare, onStructuredAction, searchStatus, onEditUserMessage, onEditUserMessageAt, isDeepResearch, researchQuery, researchSessionKey, researchPlan, researchTasks, researchSummary, senderName, senderAvatar, isOtherMember, bubbleColor, messageId, reactions, onToggleReaction, currentUserId, readers, showReaders }: ChatMessageProps) => {
+const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, images, products, attachedImages, attachedFiles, onLike, onLikeMessage, liked, onShare, onStructuredAction, searchStatus, onEditUserMessage, onEditUserMessageAt, isDeepResearch, researchQuery, researchSessionKey, narrations, senderName, senderAvatar, isOtherMember, bubbleColor, messageId, reactions, onToggleReaction, currentUserId, readers, showReaders }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
   const [previewCode, setPreviewCode] = useState<{ code: string; lang: string } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -678,20 +674,15 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
       (isDeepResearch === true));
   const showResearchCard = looksLikeResearch && !isStreaming && content.trim().length > 200;
 
-  const showResearchPanels = role === "assistant" && isDeepResearch && (researchPlan || (researchTasks && researchTasks.length > 0) || researchSummary);
+  const showNarration = role === "assistant" && isDeepResearch && narrations && narrations.length > 0;
+  const isResearchActive = !!isStreaming || (!!isThinking && !content);
 
   return (
     <div className="mb-6 relative">
-      {showResearchPanels && (
-        <div className="space-y-2">
-          {researchPlan && <ResearchPlanCard plan={researchPlan} />}
-          {researchTasks && researchTasks.length > 0 && (
-            <ResearchTaskTimeline tasks={researchTasks} isActive={!!isStreaming || (!!isThinking && !content)} />
-          )}
-          
-        </div>
+      {showNarration && (
+        <ResearchNarration items={narrations!} active={isResearchActive} />
       )}
-      {isThinking && !content && !showResearchPanels ? (
+      {isThinking && !content && !showNarration ? (
         <ThinkingLoader searchStatus={searchStatus} />
       ) : showResearchCard ? (
         <DeepResearchCard

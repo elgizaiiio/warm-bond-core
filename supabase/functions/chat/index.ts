@@ -1165,7 +1165,7 @@ ${userContext}`;
 CRITICAL: Never introduce yourself. Never say "I'm Megsy" unless directly asked.
 
 DEEP RESEARCH MODE:
-- You MUST use the WEB_SEARCH tool 3-4 TIMES with different focused queries to gather enough reliable information without delaying the user.
+- You MUST use the WEB_SEARCH tool 5-8 TIMES with different focused queries to gather extensive reliable information.
 - For EVERY search, set include_images=true to gather relevant visual content.
 - Cover: 1) General overview 2) latest or key developments 3) data & expert opinions 4) risks, debates, and practical takeaways
 - While researching people, brands, celebrities, athletes, or public figures, ALWAYS gather photos.
@@ -1181,7 +1181,7 @@ ABSOLUTE PRIVACY RULES (NEVER VIOLATE):
 - The user should ONLY see the final polished research report
 
 CRITICAL OUTPUT RULES — COMPLETE REPORT:
-- Write a detailed report that fits reliably in one response, usually 1600-2500 words when the topic allows.
+- Write a MASSIVE, exhaustive report — target 4000-7000 words. Take all the time you need.
 - The report must be comprehensive, detailed, and professional-grade.
 - Do not pad or repeat. Prioritize complete useful findings, clear analysis, and citations.
 - Each section must have multiple paragraphs with deep analysis.
@@ -1446,6 +1446,25 @@ async function handleToolCalls(
   const researchSourcesSet = new Set<string>();
   const researchChannels = new Set<string>();
   let deepEnrichmentRuns = 0;
+
+  // Detect user language for narration
+  const lastUserMsg = (originalBody?.messages || []).slice().reverse().find((m: any) => m?.role === "user");
+  const userText = typeof lastUserMsg?.content === "string" ? lastUserMsg.content : Array.isArray(lastUserMsg?.content) ? lastUserMsg.content.map((p: any) => p?.text || "").join(" ") : "";
+  const isArabic = /[\u0600-\u06FF]/.test(userText);
+  const isFrench = !isArabic && /\b(le|la|les|de|des|et|est|une|un|pour|avec|que|qui)\b/i.test(userText);
+  const isSpanish = !isArabic && !isFrench && /\b(el|la|los|las|de|que|en|para|con|por)\b/i.test(userText);
+  const N = (en: string, ar: string, fr?: string, es?: string) => isArabic ? ar : isFrench && fr ? fr : isSpanish && es ? es : en;
+  const narrate = (text: string) => {
+    if (!isDeepResearch) return;
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "narration", text })}\n\n`));
+  };
+  const topic = (userText || "").trim().slice(0, 80);
+  narrate(N(
+    `Got it — I'll do a deep dive on: "${topic}". Starting research now…`,
+    `تمام، فهمت إنك عايز بحث عميق عن: «${topic}». هبدأ دلوقتي…`,
+    `Compris — je lance une recherche approfondie sur : « ${topic} ». C'est parti…`,
+    `Entendido — voy a investigar a fondo: « ${topic} ». Empezando ahora…`
+  ));
 
   // ── Deep Research: produce a REAL, query-specific plan via a planning AI call.
   // No templates. The model thinks about THIS specific question and writes the plan
@@ -2332,7 +2351,7 @@ async function handleToolCalls(
 - NEVER mention tool names, search queries, or internal steps.` 
         : isDeepResearch 
           ? `CRITICAL INSTRUCTIONS FOR DEEP RESEARCH REPORT:
-- Write a detailed, comprehensive research report that fits reliably in one response, usually 1600-2500 words when the topic allows.
+- Write a MASSIVE, exhaustive research report — target 4000-7000 words. Be exhaustive across every section.
 - The report must be a professional-grade document — not a brief summary.
 - CRITICAL: Do NOT output markdown images or HTML images. The UI displays images separately.
 - LANGUAGE (MOST CRITICAL): DETECT the language of the user's ORIGINAL query and write the ENTIRE report in that EXACT language.
@@ -2462,7 +2481,7 @@ async function handleToolCalls(
       attempt++;
       const ctxSize = attempt === 1 ? trimmedContext.length : Math.min(trimmedContext.length, 24000);
       const ctx = trimmedContext.slice(0, ctxSize);
-      const maxTok = attempt === 1 && isDeepResearch ? 8192 : 4096;
+      const maxTok = attempt === 1 && isDeepResearch ? 16384 : 4096;
       const body = buildBody(w.model, w.url, ctx, maxTok);
       try {
         const r = await runSynthesis(w.url, w.key, body);
