@@ -2746,6 +2746,33 @@ export type Database = {
           },
         ]
       }
+      user_music_tracks: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          size_bytes: number | null
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          size_bytes?: number | null
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          size_bytes?: number | null
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       voice_templates: {
         Row: {
           audio_file_url: string
