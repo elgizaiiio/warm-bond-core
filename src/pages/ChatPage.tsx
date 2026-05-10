@@ -753,7 +753,72 @@ const ChatPage = () => {
     setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);isSubmittingRef.current = false;
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const loadUserTracks = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("user_music_tracks")
+      .select("id, name, storage_path")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (data) setUserTracks(data as any);
+  }, []);
+
+  useEffect(() => { loadUserTracks(); }, [loadUserTracks]);
+
+  const playUserTrack = useCallback(async (track: { id: string; name: string; storage_path: string }) => {
+    const { data, error } = await supabase.storage.from("user-music").createSignedUrl(track.storage_path, 3600);
+    if (error || !data?.signedUrl) { toast.error("Failed to load track"); return; }
+    if (!studyAudioRef.current) studyAudioRef.current = new Audio();
+    studyAudioRef.current.loop = true;
+    studyAudioRef.current.src = data.signedUrl;
+    studyAudioRef.current.volume = 0.5;
+    studyAudioRef.current.play().catch(() => toast.info(`Selected ${track.name} (audio blocked by browser)`));
+    setStudyMusic({ kind: track.name });
+  }, []);
+
+  const handleMusicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("audio/")) { toast.error("Please choose an audio file"); return; }
+    if (file.size > 25 * 1024 * 1024) { toast.error("Max file size is 25MB"); return; }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { toast.error("Sign in required"); return; }
+    setUploadingMusic(true);
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `${user.id}/${Date.now()}_${safeName}`;
+      const { error: upErr } = await supabase.storage.from("user-music").upload(path, file, { contentType: file.type });
+      if (upErr) throw upErr;
+      const displayName = file.name.replace(/\.[^.]+$/, "");
+      const { data: row, error: insErr } = await supabase
+        .from("user_music_tracks")
+        .insert({ user_id: user.id, name: displayName, storage_path: path, size_bytes: file.size })
+        .select("id, name, storage_path")
+        .single();
+      if (insErr) throw insErr;
+      setUserTracks((prev) => [row as any, ...prev]);
+      toast.success("Track saved");
+      await playUserTrack(row as any);
+    } catch (err: any) {
+      toast.error(err?.message || "Upload failed");
+    } finally {
+      setUploadingMusic(false);
+    }
+  };
+
+  const deleteUserTrack = async (track: { id: string; storage_path: string; name: string }) => {
+    await supabase.storage.from("user-music").remove([track.storage_path]);
+    await supabase.from("user_music_tracks").delete().eq("id", track.id);
+    setUserTracks((prev) => prev.filter((t) => t.id !== track.id));
+    if (studyMusic.kind === track.name) {
+      if (studyAudioRef.current) { studyAudioRef.current.pause(); studyAudioRef.current.src = ""; }
+      setStudyMusic({ kind: null });
+    }
+  };
+
+
     const files = e.target.files;
     if (!files) return;
     const fileList = Array.from(files);
