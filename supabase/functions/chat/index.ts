@@ -897,7 +897,7 @@ TEACHING RULES:
 
     // Shopping forces a search flow without requiring Hyperbrowser. Deep research still needs HB for browser steps.
     const shouldForceComputerFlow = !isFilesMode && !mentionsIntegrations && !wantsImageTool && !wantsVideoTool && !wantsVoiceTool && (isShopping || isDeepResearch);
-    const forcedToolCalls = shouldForceComputerFlow
+    let forcedToolCalls = shouldForceComputerFlow
       ? buildForcedToolCalls({
           latestUserText,
           explicitUrl,
@@ -907,12 +907,19 @@ TEACHING RULES:
           hasSerper: !!SERPER_API_KEY,
         })
       : [];
+    if (isDeepResearch && forcedToolCalls.length === 0) {
+      forcedToolCalls = [createSyntheticToolCall("WEB_SEARCH", { query: latestUserText, include_images: true })];
+    }
 
     if (forcedToolCalls.length > 0) {
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         async start(controller) {
+          let heartbeat: ReturnType<typeof setInterval> | null = null;
           try {
+            heartbeat = setInterval(() => {
+              try { controller.enqueue(encoder.encode(`: keep-alive ${Date.now()}\n\n`)); } catch { /* stream closed */ }
+            }, 12000);
             await handleToolCalls(controller, encoder, forcedToolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
           } catch (e) {
             console.error("forced tool flow error:", e);
@@ -920,6 +927,8 @@ TEACHING RULES:
               ? `# ${latestUserText}\n\nتعذّر إكمال جمع المصادر الحية هذه المرة، لكن تم حفظ المحادثة بشكل صحيح. حاول تشغيل Deep Research مرة أخرى بعد لحظات للحصول على التقرير الكامل.`
               : `# ${latestUserText}\n\nLive source collection could not finish this time, but the conversation was saved correctly. Please run Deep Research again in a moment for the full report.`;
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: fallback } }] })}\n\n`));
+          } finally {
+            if (heartbeat) clearInterval(heartbeat);
           }
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
