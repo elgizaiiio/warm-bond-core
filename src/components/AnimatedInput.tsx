@@ -302,7 +302,7 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
             onClick={onPlusClick}
             className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-colors ${
               accentMode === "learn"
-                ? "bg-emerald-600 text-white hover:bg-emerald-500 shadow-[0_6px_20px_-6px_rgba(5,150,105,0.6)]"
+                ? "text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 hover:bg-accent/40"
                 : "text-foreground/85 hover:text-foreground hover:bg-accent/40"
             }`}
             aria-label="Open attachments"

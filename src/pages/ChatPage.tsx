@@ -197,6 +197,9 @@ const ChatPage = () => {
   const [studyTimers, setStudyTimers] = useState<Array<{ id: string; totalSec: number; startedAt: number; paused: boolean; pausedRemaining: number | null }>>([]);
   const [timerInputMin, setTimerInputMin] = useState<number>(25);
   const studyAudioRef = useRef<HTMLAudioElement | null>(null);
+  const musicFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [userTracks, setUserTracks] = useState<Array<{ id: string; name: string; storage_path: string }>>([]);
+  const [uploadingMusic, setUploadingMusic] = useState(false);
   const [userIntegrations, setUserIntegrations] = useState<string[]>([]);
 
   const pushNarration = useCallback((text: string) => {
@@ -750,6 +753,70 @@ const ChatPage = () => {
     setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);isSubmittingRef.current = false;
   };
 
+  const loadUserTracks = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("user_music_tracks")
+      .select("id, name, storage_path")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (data) setUserTracks(data as any);
+  }, []);
+
+  useEffect(() => { loadUserTracks(); }, [loadUserTracks]);
+
+  const playUserTrack = useCallback(async (track: { id: string; name: string; storage_path: string }) => {
+    const { data, error } = await supabase.storage.from("user-music").createSignedUrl(track.storage_path, 3600);
+    if (error || !data?.signedUrl) { toast.error("Failed to load track"); return; }
+    if (!studyAudioRef.current) studyAudioRef.current = new Audio();
+    studyAudioRef.current.loop = true;
+    studyAudioRef.current.src = data.signedUrl;
+    studyAudioRef.current.volume = 0.5;
+    studyAudioRef.current.play().catch(() => toast.info(`Selected ${track.name} (audio blocked by browser)`));
+    setStudyMusic({ kind: track.name });
+  }, []);
+
+  const handleMusicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("audio/")) { toast.error("Please choose an audio file"); return; }
+    if (file.size > 25 * 1024 * 1024) { toast.error("Max file size is 25MB"); return; }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { toast.error("Sign in required"); return; }
+    setUploadingMusic(true);
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `${user.id}/${Date.now()}_${safeName}`;
+      const { error: upErr } = await supabase.storage.from("user-music").upload(path, file, { contentType: file.type });
+      if (upErr) throw upErr;
+      const displayName = file.name.replace(/\.[^.]+$/, "");
+      const { data: row, error: insErr } = await supabase
+        .from("user_music_tracks")
+        .insert({ user_id: user.id, name: displayName, storage_path: path, size_bytes: file.size })
+        .select("id, name, storage_path")
+        .single();
+      if (insErr) throw insErr;
+      setUserTracks((prev) => [row as any, ...prev]);
+      toast.success("Track saved");
+      await playUserTrack(row as any);
+    } catch (err: any) {
+      toast.error(err?.message || "Upload failed");
+    } finally {
+      setUploadingMusic(false);
+    }
+  };
+
+  const deleteUserTrack = async (track: { id: string; storage_path: string; name: string }) => {
+    await supabase.storage.from("user-music").remove([track.storage_path]);
+    await supabase.from("user_music_tracks").delete().eq("id", track.id);
+    setUserTracks((prev) => prev.filter((t) => t.id !== track.id));
+    if (studyMusic.kind === track.name) {
+      if (studyAudioRef.current) { studyAudioRef.current.pause(); studyAudioRef.current.src = ""; }
+      setStudyMusic({ kind: null });
+    }
+  };
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -1486,49 +1553,6 @@ Ask me anything to get started!`;
                     <ChevronDown className="w-4 h-4 -rotate-90 text-muted-foreground" />
                   </motion.button>
 
-                  {/* Flashcards */}
-                  <motion.button
-                    whileTap={{ scale: 0.97 }}
-                    transition={iosSpring}
-                    onClick={() => { setPlusMenuOpen(false); handleSendWithText("Generate 5 concise flashcards (front/back) from our current conversation."); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl liquid-glass-hover transition-colors text-left"
-                  >
-                    <Layers className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
-                    <span className="flex-1 text-[13.5px] text-foreground/85">Flashcards</span>
-                  </motion.button>
-
-                  {/* Quick quiz */}
-                  <motion.button
-                    whileTap={{ scale: 0.97 }}
-                    transition={iosSpring}
-                    onClick={() => { setPlusMenuOpen(false); handleSendWithText("Give me a 5-question quiz on what we just discussed. Wait for my answers, then grade them."); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl liquid-glass-hover transition-colors text-left"
-                  >
-                    <ClipboardCheck className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
-                    <span className="flex-1 text-[13.5px] text-foreground/85">Quick quiz</span>
-                  </motion.button>
-
-                  {/* Read aloud toggle */}
-                  <motion.button
-                    whileTap={{ scale: 0.97 }}
-                    transition={iosSpring}
-                    onClick={() => setReadAloud((v) => !v)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl liquid-glass-hover transition-colors text-left"
-                  >
-                    <Volume2 className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
-                    <span className="flex-1 text-[13.5px] text-foreground/85">Read aloud</span>
-                    <div
-                      className="relative shrink-0 rounded-full transition-colors duration-200 ease-out"
-                      style={{ width: 40, height: 24, backgroundColor: readAloud ? "#059669" : "#e9e9eb" }}
-                    >
-                      <motion.div
-                        layout
-                        transition={iosSpring}
-                        className="absolute top-1/2 rounded-full bg-white"
-                        style={{ width: 20, height: 20, marginTop: -10, left: readAloud ? 18 : 2, boxShadow: "0px 3px 8px rgba(0,0,0,0.15)" }}
-                      />
-                    </div>
-                  </motion.button>
                 </>
               ) : (
                 <>
@@ -1812,7 +1836,58 @@ Ask me anything to get started!`;
                     </motion.button>
                   );
                 })}
+
+                {/* Upload your own track */}
+                <button
+                  type="button"
+                  disabled={uploadingMusic}
+                  onClick={() => musicFileInputRef.current?.click()}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-dashed border-emerald-500/40 hover:bg-emerald-500/5 transition-colors text-left disabled:opacity-60"
+                >
+                  {uploadingMusic
+                    ? <Loader2 className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400 animate-spin" />
+                    : <Plus className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={2} />}
+                  <span className="flex-1 text-[13.5px] text-foreground/90">{uploadingMusic ? "Uploading…" : "Upload your music"}</span>
+                </button>
+
+                {userTracks.length > 0 && (
+                  <>
+                    <div className="mt-2 px-3 text-[10px] uppercase tracking-wide text-muted-foreground/70">My tracks</div>
+                    {userTracks.map((track) => {
+                      const active = studyMusic.kind === track.name;
+                      return (
+                        <div
+                          key={track.id}
+                          className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-colors ${active ? "bg-emerald-500/10 border border-emerald-500/30" : "liquid-glass-hover border border-transparent"}`}
+                        >
+                          <button
+                            onClick={() => { playUserTrack(track); setPlusView("main"); }}
+                            className="flex-1 flex items-center gap-3 text-left min-w-0"
+                          >
+                            <Music2 className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={1.75} />
+                            <span className="flex-1 text-[13.5px] text-foreground/90 truncate">{track.name}</span>
+                            {active && <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={2.5} />}
+                          </button>
+                          <button
+                            onClick={() => deleteUserTrack(track)}
+                            className="w-7 h-7 flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+                            aria-label={`Delete ${track.name}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
               </div>
+              <input
+                ref={musicFileInputRef}
+                type="file"
+                accept="audio/*"
+                className="hidden"
+                onChange={handleMusicUpload}
+              />
             </motion.div>
           ) : plusView === "timer" ? (
             <motion.div
@@ -1961,7 +2036,7 @@ Ask me anything to get started!`;
           onNewChat={handleNewChat}
           onSelectConversation={loadConversation}
           activeConversationId={conversationId}
-          currentMode="chat" />
+          currentMode={chatMode === "learning" ? "learning" : chatMode === "deep-research" ? "research" : chatMode === "shopping" ? "shopping" : "chat"} />
 
         {/* Header */}
         <div className="absolute top-0 inset-x-0 z-20 flex items-center gap-2 px-4 py-2.5 min-h-[56px] pointer-events-none [&>*]:pointer-events-auto">
@@ -2103,29 +2178,34 @@ Ask me anything to get started!`;
                 </motion.div>
                 );
               })}
-              {/* In-chat focus timers */}
-              <AnimatePresence>
-                {studyTimers.map((t) => (
-                  <InChatTimerCard
-                    key={t.id}
-                    id={t.id}
-                    totalSec={t.totalSec}
-                    startedAt={t.startedAt}
-                    paused={t.paused}
-                    pausedRemaining={t.pausedRemaining}
-                    onPauseToggle={(id) => setStudyTimers((prev) => prev.map((x) => {
-                      if (x.id !== id) return x;
-                      if (x.paused) {
-                        const remaining = x.pausedRemaining ?? x.totalSec;
-                        return { ...x, paused: false, startedAt: Date.now() - (x.totalSec - remaining) * 1000, pausedRemaining: null };
-                      }
-                      const remaining = Math.max(0, x.totalSec - Math.floor((Date.now() - x.startedAt) / 1000));
-                      return { ...x, paused: true, pausedRemaining: remaining };
-                    }))}
-                    onCancel={(id) => setStudyTimers((prev) => prev.filter((x) => x.id !== id))}
-                  />
-                ))}
-              </AnimatePresence>
+              {/* Sticky in-chat focus timers — float above messages while scrolling */}
+              {studyTimers.length > 0 && (
+                <div className="sticky top-2 z-30 flex flex-col gap-2 pointer-events-none">
+                  <AnimatePresence>
+                    {studyTimers.map((t) => (
+                      <div key={t.id} className="pointer-events-auto">
+                        <InChatTimerCard
+                          id={t.id}
+                          totalSec={t.totalSec}
+                          startedAt={t.startedAt}
+                          paused={t.paused}
+                          pausedRemaining={t.pausedRemaining}
+                          onPauseToggle={(id) => setStudyTimers((prev) => prev.map((x) => {
+                            if (x.id !== id) return x;
+                            if (x.paused) {
+                              const remaining = x.pausedRemaining ?? x.totalSec;
+                              return { ...x, paused: false, startedAt: Date.now() - (x.totalSec - remaining) * 1000, pausedRemaining: null };
+                            }
+                            const remaining = Math.max(0, x.totalSec - Math.floor((Date.now() - x.startedAt) / 1000));
+                            return { ...x, paused: true, pausedRemaining: remaining };
+                          }))}
+                          onCancel={(id) => setStudyTimers((prev) => prev.filter((x) => x.id !== id))}
+                        />
+                      </div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              )}
 
               {/* System events (join/leave) */}
               <AnimatePresence>
