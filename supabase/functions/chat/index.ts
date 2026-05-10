@@ -626,7 +626,7 @@ serve(async (req) => {
       wantsSlideTool || mentionsBrowse || hasWebsiteIntent(latestUserText) || hasBrowserEscalation(latestUserText) || isShopping || isDeepResearch || needsSearch
     );
     const shouldLoadSerperKey = !isCasualMessage && (isDeepResearch || isShopping || wantsHamzaProfile || needsSearch);
-    const shouldLoadHyperbrowserKey = needsBrowserIntent;
+    const shouldLoadHyperbrowserKey = needsBrowserIntent && !isDeepResearch;
 
     const [SERPER_API_KEY, HB_API_KEY] = await Promise.all([
       shouldLoadSerperKey ? getSerperKey(sb) : Promise.resolve(null),
@@ -896,7 +896,7 @@ TEACHING RULES:
     }
 
     // Shopping forces a search flow without requiring Hyperbrowser. Deep research still needs HB for browser steps.
-    const shouldForceComputerFlow = !isFilesMode && !mentionsIntegrations && !wantsImageTool && !wantsVideoTool && !wantsVoiceTool && (isShopping || (!!HB_API_KEY && isDeepResearch));
+    const shouldForceComputerFlow = !isFilesMode && !mentionsIntegrations && !wantsImageTool && !wantsVideoTool && !wantsVoiceTool && (isShopping || isDeepResearch);
     const forcedToolCalls = shouldForceComputerFlow
       ? buildForcedToolCalls({
           latestUserText,
