@@ -1796,7 +1796,7 @@ Ask me anything to get started!`;
           currentMode="chat" />
 
         {/* Header */}
-        <div className="sticky top-0 z-20 flex items-center gap-2 px-4 py-2.5 min-h-[56px] bg-background/60 backdrop-blur-xl">
+        <div className="absolute top-0 inset-x-0 z-20 flex items-center gap-2 px-4 py-2.5 min-h-[56px] bg-transparent pointer-events-none [&>*]:pointer-events-auto">
           <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-full text-foreground/85 hover:bg-accent/40 transition-colors" aria-label="Open menu">
             <Menu className="w-[20px] h-[20px]" />
           </button>
