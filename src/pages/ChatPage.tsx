@@ -202,15 +202,10 @@ const ChatPage = () => {
   const studyAudioRef = useRef<HTMLAudioElement | null>(null);
   const [userIntegrations, setUserIntegrations] = useState<string[]>([]);
 
-  const upsertResearchTask = useCallback((task: ResearchTask) => {
-    researchTasksRef.current = [...researchTasksRef.current.filter((x) => x.id !== task.id), task];
-    setResearchTasks(researchTasksRef.current);
-  }, []);
-
-  const updateResearchTask = useCallback((id: string, patch: Partial<ResearchTask>) => {
-    const cleanPatch = Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined)) as Partial<ResearchTask>;
-    researchTasksRef.current = researchTasksRef.current.map((task) => task.id === id ? { ...task, ...cleanPatch } : task);
-    setResearchTasks(researchTasksRef.current);
+  const pushNarration = useCallback((text: string) => {
+    const t = String(text || "").trim();
+    if (!t) return;
+    setNarrations((prev) => (prev[prev.length - 1] === t ? prev : [...prev, t]));
   }, []);
 
   // Fetch user info for memory + welcome message
