@@ -1048,11 +1048,12 @@ TEACHING RULES:
 
       // Extra free knowledge tools — load only those router suggested (or all if router skipped)
       try {
-        const { EXTRA_TOOL_DEFS } = await import("../_shared/extra-tools.ts");
+        const { EXTRA_TOOL_DEFS, PHASE4_TOOL_DEFS } = await import("../_shared/extra-tools.ts");
+        const allDefs = [...EXTRA_TOOL_DEFS, ...PHASE4_TOOL_DEFS];
         const wanted = new Set<string>(routerDecision?.tools_needed || []);
         const extras = wanted.size > 0
-          ? EXTRA_TOOL_DEFS.filter((t: any) => wanted.has(t.function.name))
-          : EXTRA_TOOL_DEFS; // default: expose all (low cost)
+          ? allDefs.filter((t: any) => wanted.has(t.function.name))
+          : allDefs;
         selectedTools.push(...extras);
       } catch (e) { console.warn("extra tools load failed", (e as Error).message); }
     }
@@ -2482,13 +2483,32 @@ async function handleToolCalls(
         continue;
       }
 
-      // Free knowledge tools (Wikipedia, arXiv, GitHub, Reddit, StackOverflow, GDELT News, MathSolver)
-      const EXTRA_TOOL_NAMES = new Set(["WIKIPEDIA", "ARXIV", "GITHUB_SEARCH", "REDDIT_SEARCH", "STACKOVERFLOW", "NEWS_SEARCH", "MATH_SOLVER"]);
+      // Free knowledge tools (Phase 1+3)
+      const EXTRA_TOOL_NAMES = new Set([
+        "WIKIPEDIA", "ARXIV", "GITHUB_SEARCH", "REDDIT_SEARCH", "STACKOVERFLOW", "NEWS_SEARCH", "MATH_SOLVER",
+        "YOUTUBE_TRANSCRIPT", "GOOGLE_SCHOLAR", "HACKERNEWS", "DUCKDUCKGO_INSTANT", "URL_FETCH",
+        "OPEN_LIBRARY", "WORLD_BANK", "CURRENCY_CONVERT", "WEATHER",
+      ]);
+      // Phase 4: execution & multimodal
+      const PHASE4_TOOL_NAMES = new Set([
+        "TRANSLATE", "IMAGE_VISION", "TRANSCRIBE_AUDIO", "TEXT_TO_SPEECH", "CSV_ANALYZE",
+      ]);
       if (EXTRA_TOOL_NAMES.has(toolName)) {
-        pushStatus(`Looking up ${toolName.toLowerCase().replace("_", " ")}...`);
+        pushStatus(`Looking up ${toolName.toLowerCase().replace(/_/g, " ")}...`);
         try {
           const { execExtraTool } = await import("../_shared/extra-tools.ts");
           const result = await execExtraTool(toolName, toolArgs);
+          allSearchResults.push(`${toolName} (${JSON.stringify(toolArgs).slice(0, 120)}):\n${result}`);
+        } catch (e) {
+          allSearchResults.push(`${toolName} failed: ${(e as Error).message}`);
+        }
+        continue;
+      }
+      if (PHASE4_TOOL_NAMES.has(toolName)) {
+        pushStatus(`Running ${toolName.toLowerCase().replace(/_/g, " ")}...`);
+        try {
+          const { execPhase4Tool } = await import("../_shared/extra-tools.ts");
+          const result = await execPhase4Tool(toolName, toolArgs);
           allSearchResults.push(`${toolName} (${JSON.stringify(toolArgs).slice(0, 120)}):\n${result}`);
         } catch (e) {
           allSearchResults.push(`${toolName} failed: ${(e as Error).message}`);
@@ -2505,6 +2525,9 @@ async function handleToolCalls(
         "GENERATE_IMAGE", "GENERATE_VIDEO", "GENERATE_VOICE", "CANVA_CREATE_SLIDES",
         "REMEMBER_FACT", "SEARCH_ATTACHMENTS", "CODE_INTERPRETER", "FETCH_URL",
         "WIKIPEDIA", "ARXIV", "GITHUB_SEARCH", "REDDIT_SEARCH", "STACKOVERFLOW", "NEWS_SEARCH", "MATH_SOLVER",
+        "YOUTUBE_TRANSCRIPT", "GOOGLE_SCHOLAR", "HACKERNEWS", "DUCKDUCKGO_INSTANT", "URL_FETCH",
+        "OPEN_LIBRARY", "WORLD_BANK", "CURRENCY_CONVERT", "WEATHER",
+        "TRANSLATE", "IMAGE_VISION", "TRANSCRIBE_AUDIO", "TEXT_TO_SPEECH", "CSV_ANALYZE",
       ]);
       const INTERNAL_PREFIXES = ["WEB", "BROWSE", "SEARCH", "SHOPPING", "FETCH", "GENERATE", "CODE", "REMEMBER", "CONVERT", "CANVA"];
       const KNOWN_COMPOSIO_APPS = new Set([
