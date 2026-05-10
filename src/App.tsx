@@ -276,13 +276,7 @@ const App = () => {
                   <Route path="/voice/podcast-editor" element={<ProtectedRoute><PodcastEditorPage /></ProtectedRoute>} />
                   <Route path="/voice/audio-restoration" element={<ProtectedRoute><AudioRestorationPage /></ProtectedRoute>} />
                   <Route path="/voice/transcription" element={<ProtectedRoute><AudioTranscriptionPage /></ProtectedRoute>} />
-                  <Route path="/tools/smart-notes" element={<ProtectedRoute><SmartNotesPage /></ProtectedRoute>} />
-                  <Route path="/tools/exam-simulator" element={<ProtectedRoute><ExamSimulatorPage /></ProtectedRoute>} />
-                  <Route path="/tools/study-planner" element={<ProtectedRoute><StudyPlannerPage /></ProtectedRoute>} />
-                  <Route path="/tools/focus-room" element={<ProtectedRoute><FocusRoomPage /></ProtectedRoute>} />
-                  <Route path="/learning" element={<ProtectedRoute><LearningModePage /></ProtectedRoute>} />
-                  <Route path="/shopping" element={<ProtectedRoute><ShoppingModePage /></ProtectedRoute>} />
-                  <Route path="/research" element={<ProtectedRoute><DeepResearchPage /></ProtectedRoute>} />
+                  {/* Old learning/shopping/research standalone pages removed — modes live inside /chat now */}
                   <Route path="/research/preview/:id" element={<ProtectedRoute><ResearchPreviewPage /></ProtectedRoute>} />
                   <Route path="/code" element={<ProtectedRoute><ProgrammingPage key={currentUserId} /></ProtectedRoute>} />
                   <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace key={currentUserId} /></ProtectedRoute>} />
