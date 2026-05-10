@@ -1880,12 +1880,12 @@ Ask me anything to get started!`;
                 transition={{ type: "spring", stiffness: 220, damping: 20 }}
                 className="relative inline-flex items-center gap-3"
               >
-                <div className={`absolute inset-0 -m-8 rounded-full blur-2xl animate-pulse ${chatMode === "deep-research" ? "bg-violet-500/20" : "bg-blue-500/15"}`} />
-                <PegtopIcon className={`relative w-9 h-9 md:w-10 md:h-10 ${chatMode === "deep-research" ? "text-violet-500 drop-shadow-[0_0_18px_rgba(139,92,246,0.7)]" : "text-blue-500 drop-shadow-[0_0_18px_rgba(59,130,246,0.7)]"}`} />
+                <div className={`absolute inset-0 -m-8 rounded-full blur-2xl animate-pulse ${chatMode === "deep-research" ? "bg-violet-500/20" : chatMode === "learning" ? "bg-emerald-500/20" : "bg-blue-500/15"}`} />
+                <PegtopIcon className={`relative w-9 h-9 md:w-10 md:h-10 ${chatMode === "deep-research" ? "text-violet-500 drop-shadow-[0_0_18px_rgba(139,92,246,0.7)]" : chatMode === "learning" ? "text-emerald-500 drop-shadow-[0_0_18px_rgba(16,185,129,0.7)]" : "text-blue-500 drop-shadow-[0_0_18px_rgba(59,130,246,0.7)]"}`} />
                 <AnimatedHeadline
-                  text={chatMode === "deep-research" ? "Research" : "Create"}
-                  highlight={chatMode === "deep-research" ? "deeply" : "something"}
-                  highlightColor={chatMode === "deep-research" ? "#8B5CF6" : "#3B82F6"}
+                  text={chatMode === "deep-research" ? "Research" : chatMode === "learning" ? "Learn" : "Create"}
+                  highlight={chatMode === "deep-research" ? "deeply" : chatMode === "learning" ? "anything" : "something"}
+                  highlightColor={chatMode === "deep-research" ? "#8B5CF6" : chatMode === "learning" ? "#10B981" : "#3B82F6"}
                 />
               </motion.div>
             </div>
