@@ -25,6 +25,7 @@ import AnimatedHeadline from "@/components/research/AnimatedHeadline";
 import ClarifyDialog, { type ClarifyQuestion } from "@/components/research/ClarifyDialog";
 import ConnectorsDialog from "@/components/ConnectorsDialog";
 import GlowButton from "@/components/GlowButton";
+import { ChatFollowups } from "@/components/chat/ChatFollowups";
 
 import {
   DropdownMenu,
