@@ -140,10 +140,6 @@ const ChatPage = () => {
   const [userPlan, setUserPlan] = useState<string>("free");
   const [computerUseEnabled, setComputerUseEnabled] = useState(true);
   const [chatMode, setChatMode] = useState<ChatMode>("normal");
-  // Learn Mode session state
-  const [studySession, setStudySession] = useState<{ active: boolean; durationMin: number; startedAt: number; topic: string } | null>(null);
-  const [studyBuddyMood, setStudyBuddyMood] = useState<"idle" | "happy" | "encourage" | "celebrate" | "thinking">("idle");
-  const studyFocus = chatMode === "learning" && !!studySession?.active;
   const [attachedFiles, setAttachedFiles] = useState<{name: string;type: string;data: string;}[]>([]);
   const [searchStatus, setSearchStatus] = useState<string>("");
   const [researchPlan, setResearchPlan] = useState<ResearchPlan | null>(null);
