@@ -602,6 +602,14 @@ serve(async (req) => {
           const memoryLines = memoriesRes.data.map((m: any) => `• ${m.fact}`).join("\n");
           parts.push(`\nRemembered facts about the user:\n${memoryLines}`);
         }
+        if (kgRes.data && kgRes.data.length > 0) {
+          const kgLines = kgRes.data
+            .filter((t: any) => (t.confidence ?? 1) >= 0.5)
+            .slice(0, 15)
+            .map((t: any) => `• (${t.entity}) —${t.relation}→ (${t.target_entity})`)
+            .join("\n");
+          if (kgLines) parts.push(`\nKnowledge graph (user's world):\n${kgLines}`);
+        }
         if (parts.length > 0) userContext = `\n\n--- USER CONTEXT ---\n${parts.join("\n")}`;
       } catch { /* silently skip */ }
     }
