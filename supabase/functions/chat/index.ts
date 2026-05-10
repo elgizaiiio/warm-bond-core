@@ -1071,6 +1071,11 @@ TEACHING RULES:
       body.tool_choice = "auto";
     }
 
+    // Auto-enable reasoning for complex tasks (CoT)
+    if (routerDecision?.needs_reasoning && routerDecision?.complexity === "complex" && !isCasualMessage) {
+      body.reasoning = { effort: "medium" };
+    }
+
     // Shopping forces a search flow without requiring Hyperbrowser. Deep research still needs HB for browser steps.
     const shouldForceComputerFlow = !isFilesMode && !mentionsIntegrations && !wantsImageTool && !wantsVideoTool && !wantsVoiceTool && (isShopping || isDeepResearch);
     let forcedToolCalls = shouldForceComputerFlow
