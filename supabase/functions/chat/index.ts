@@ -1467,13 +1467,86 @@ async function handleToolCalls(
     if (!isDeepResearch) return;
     controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "narration", text })}\n\n`));
   };
-  const topic = (userText || "").trim().slice(0, 80);
-  narrate(N(
-    `Got it — I'll do a deep dive on: "${topic}". Starting research now…`,
-    `تمام، فهمت إنك عايز بحث عميق عن: «${topic}». هبدأ دلوقتي…`,
-    `Compris — je lance une recherche approfondie sur : « ${topic} ». C'est parti…`,
-    `Entendido — voy a investigar a fondo: « ${topic} ». Empezando ahora…`
-  ));
+
+  // ── REAL AI-generated, streaming narration. Each milestone calls Gemini Flash Lite
+  // and streams tokens to the client so the user sees the AI literally typing what it's doing,
+  // in their exact language and dialect. No templates.
+  const narrationLangHint = isArabic
+    ? "Reply in casual Egyptian Arabic dialect (مصري دارج), one short sentence."
+    : isFrench
+      ? "Réponds en français familier, une seule courte phrase."
+      : isSpanish
+        ? "Responde en español coloquial, una sola frase corta."
+        : "Reply in casual conversational English, one short sentence.";
+
+  const aiNarrate = async (intent: string) => {
+    if (!isDeepResearch) return;
+    const key = Deno.env.get("LOVABLE_API_KEY");
+    if (!key) return;
+    const narrId = `n_${Math.random().toString(36).slice(2, 9)}`;
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "narration_start", id: narrId })}\n\n`));
+    try {
+      const resp = await fetchWithTimeout(LOVABLE_URL, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-lite",
+          stream: true,
+          temperature: 0.85,
+          messages: [
+            {
+              role: "system",
+              content: [
+                "You are the live narrator of a research assistant. The user just asked a question and you are doing real research for them.",
+                "Write a SINGLE short, natural, varied sentence telling the user what you are about to do or just discovered.",
+                "Speak in first person. Be warm, human, slightly enthusiastic. NEVER repeat phrasing.",
+                "NO emoji. NO markdown. NO quotes. NO prefixes. Just the sentence.",
+                `User's original question: "${userText.slice(0, 200)}"`,
+                narrationLangHint,
+              ].join("\n"),
+            },
+            { role: "user", content: `Current step: ${intent}\n\nWrite the one-sentence live narration now.` },
+          ],
+        }),
+      }, 12000);
+      if (!resp.ok || !resp.body) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "narration_end", id: narrId })}\n\n`));
+        return;
+      }
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      let acc = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() || "";
+        for (const ln of lines) {
+          const s = ln.trim();
+          if (!s.startsWith("data:")) continue;
+          const data = s.slice(5).trim();
+          if (!data || data === "[DONE]") continue;
+          try {
+            const j = JSON.parse(data);
+            const delta = j?.choices?.[0]?.delta?.content || "";
+            if (delta) {
+              acc += delta;
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "narration_chunk", id: narrId, delta })}\n\n`));
+            }
+          } catch { /* skip */ }
+        }
+      }
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "narration_end", id: narrId, text: acc })}\n\n`));
+    } catch (e) {
+      console.error("[aiNarrate]", e);
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "narration_end", id: narrId })}\n\n`));
+    }
+  };
+
+  const topic = (userText || "").trim().slice(0, 120);
+  await aiNarrate(`Greet briefly and tell the user you're starting a deep research on: "${topic}". This is the very first message — be welcoming.`);
 
   // ── Deep Research: produce a REAL, query-specific plan via a planning AI call.
   // No templates. The model thinks about THIS specific question and writes the plan
@@ -1657,12 +1730,7 @@ async function handleToolCalls(
         pushStatus(isDeepResearch ? "Gathering trusted sources..." : "Searching the web...");
         if (isDeepResearch) {
           const q = searchQuery.slice(0, 70);
-          narrate(N(
-            `Searching the web for: "${q}"…`,
-            `بدور دلوقتي على معلومات عن: «${q}»…`,
-            `Je cherche sur le web : « ${q} »…`,
-            `Buscando en la web: « ${q} »…`
-          ));
+          await aiNarrate(`Tell the user you are now searching the web for: "${q}". Mention the topic naturally.`);
         }
 
         const searchRequest = fetchWithTimeout("https://google.serper.dev/search", {
@@ -1722,12 +1790,7 @@ async function handleToolCalls(
           researchChannels.add("Web");
           emitTaskDone(searchTaskId, `${organicCount} results`);
           if (organicCount > 0) {
-            narrate(N(
-              `Great — I found ${organicCount} solid results. Reviewing them now…`,
-              `تمام، لقيت ${organicCount} نتيجة مفيدة. هراجعها دلوقتي…`,
-              `Super — ${organicCount} résultats solides trouvés. Je les analyse…`,
-              `Genial — encontré ${organicCount} resultados sólidos. Los estoy revisando…`
-            ));
+            await aiNarrate(`You just got ${organicCount} solid web results for "${searchQuery}". Tell the user you found them and are reviewing them now.`);
           }
         }
 
@@ -1735,12 +1798,7 @@ async function handleToolCalls(
         if (isDeepResearch && deepEnrichmentRuns < 1) {
           deepEnrichmentRuns += 1;
           pushStatus("Consulting Wikipedia, arXiv, Reddit, Hacker News...");
-          narrate(N(
-            `Now I'm cross-checking with Wikipedia, arXiv, Reddit and Hacker News…`,
-            `هتأكد من المعلومة من ويكيبيديا و arXiv و Reddit و Hacker News…`,
-            `Je recoupe avec Wikipedia, arXiv, Reddit et Hacker News…`,
-            `Estoy contrastando con Wikipedia, arXiv, Reddit y Hacker News…`
-          ));
+          await aiNarrate(`Tell the user you're now cross-checking the same topic against Wikipedia, arXiv, Reddit and Hacker News to verify and add depth.`);
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "multi_source_started", query: searchQuery })}\n\n`));
           const [wiki, arxiv, reddit, hn] = await Promise.allSettled([
             searchWikipedia(searchQuery),
@@ -1770,12 +1828,7 @@ async function handleToolCalls(
           const topLinks: string[] = (searchData.organic || []).slice(0, 1).map((r: any) => r.link).filter(Boolean);
           if (topLinks.length > 0) {
             pushStatus("Reading top sources in depth...");
-            narrate(N(
-              `Diving into the strongest source for full context…`,
-              `هغوص في أقوى مصدر علشان آخد السياق الكامل…`,
-              `Je plonge dans la meilleure source pour le contexte complet…`,
-              `Profundizando en la mejor fuente para tener el contexto completo…`
-            ));
+            await aiNarrate(`Tell the user you're diving deep into the strongest source you found to extract its full context.`);
             const readIds = topLinks.map((u) => { const id = newTaskId(); emitTaskStart(id, "read", "Reading source in depth", u); return id; });
             const reads = await Promise.allSettled(topLinks.map((u) => readWithJina(u)));
             reads.forEach((res, i) => {
@@ -2349,12 +2402,7 @@ async function handleToolCalls(
     pushStatus(isDeepResearch ? "Writing the report now..." : (isShopping ? "Preparing recommendations..." : "Writing response..."));
     if (isDeepResearch) {
       const srcCount = researchSourcesSet.size;
-      narrate(N(
-        `I've gathered ${srcCount} sources. Now putting it all together into one clean report…`,
-        `جمعت ${srcCount} مصدر. هركّب كل المعلومات دلوقتي في تقرير منظم ومفصّل…`,
-        `J'ai rassemblé ${srcCount} sources. Je compose maintenant un rapport clair et complet…`,
-        `Reuní ${srcCount} fuentes. Ahora estoy armando un informe claro y completo…`
-      ));
+      await aiNarrate(`You've gathered ${srcCount} real sources for "${userText.slice(0,80)}". Tell the user you're now assembling everything into a clean structured report.`);
     }
     if (isDeepResearch) {
       const synthId = newTaskId();
