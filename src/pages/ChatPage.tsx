@@ -68,7 +68,7 @@ interface ProductResult {
   delivery?: string | null;
 }
 
-const EMPTY_RESEARCH_TASKS: ResearchTask[] = [];
+
 const EMPTY_READERS: { user_id: string; name?: string; avatar?: string }[] = [];
 const EMPTY_REACTIONS: { id: string; emoji: string; user_id: string }[] = [];
 
