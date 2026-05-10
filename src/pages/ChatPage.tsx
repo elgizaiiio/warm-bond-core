@@ -724,6 +724,19 @@ const ChatPage = () => {
         if (resolvedConversationId && assistantContent) {
           const aId = await saveMessage(resolvedConversationId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
           if (aId) ownInsertedIdsRef.current.add(aId);
+          if (isDeepResearch) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.from("research_reports").upsert({
+                user_id: user.id,
+                session_key: `conv_${resolvedConversationId}_${assistantMessageIndex}`,
+                query: userInput || "Deep Research",
+                report: assistantContent,
+                images: (searchImages.length > 0 ? searchImages : []) as any,
+                steps: [] as any,
+              } as any, { onConflict: "user_id,session_key" });
+            }
+          }
           setMessages((prev) => {
             const assistantIndex = prev.findIndex((m) => m.clientId === `assistant-${localTurnId}`);
             const targetIndex = assistantIndex >= 0 ? assistantIndex : prev.length - 1;
