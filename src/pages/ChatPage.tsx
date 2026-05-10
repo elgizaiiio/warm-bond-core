@@ -1823,6 +1823,111 @@ Ask me anything to get started!`;
                 ))}
               </div>
             </motion.div>
+          ) : plusView === "music" ? (
+            <motion.div
+              key="music"
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.18 }}
+              className="flex flex-col"
+            >
+              <div className="flex items-center gap-1 px-1.5 pt-1 pb-2">
+                <motion.button whileTap={{ scale: 0.92 }} onClick={() => setPlusView("main")} className="w-7 h-7 flex items-center justify-center rounded-full liquid-glass-hover" aria-label="Back">
+                  <ChevronLeft className="w-4 h-4 text-foreground/80" />
+                </motion.button>
+                <span className="text-[13px] font-semibold text-foreground/85">Study music</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                {[
+                  { id: "Lo-fi", url: "https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3" },
+                  { id: "Classical", url: "https://cdn.pixabay.com/audio/2022/10/25/audio_92215f17a4.mp3" },
+                  { id: "Nature sounds", url: "https://cdn.pixabay.com/audio/2022/03/15/audio_e1ada46b94.mp3" },
+                  { id: "Focus beats", url: "https://cdn.pixabay.com/audio/2023/06/02/audio_5d4cb33a1d.mp3" },
+                  { id: "White noise", url: "https://cdn.pixabay.com/audio/2022/03/24/audio_e87a37a40b.mp3" },
+                  { id: "Off", url: "" },
+                ].map((opt) => {
+                  const active = (studyMusic.kind || "Off") === opt.id;
+                  return (
+                    <motion.button
+                      key={opt.id}
+                      whileTap={{ scale: 0.98 }}
+                      transition={iosSpring}
+                      onClick={() => {
+                        if (opt.id === "Off") {
+                          setStudyMusic({ kind: null });
+                          if (studyAudioRef.current) { studyAudioRef.current.pause(); studyAudioRef.current.src = ""; }
+                        } else {
+                          setStudyMusic({ kind: opt.id });
+                          if (!studyAudioRef.current) studyAudioRef.current = new Audio();
+                          studyAudioRef.current.loop = true;
+                          studyAudioRef.current.src = opt.url;
+                          studyAudioRef.current.volume = 0.5;
+                          studyAudioRef.current.play().catch(() => toast.info(`Selected ${opt.id} (audio blocked by browser)`));
+                        }
+                        setPlusView("main");
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left transition-colors ${active ? "bg-emerald-500/10 border border-emerald-500/30" : "liquid-glass-hover border border-transparent"}`}
+                    >
+                      <Music2 className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
+                      <span className="flex-1 text-[13.5px] text-foreground/90">{opt.id}</span>
+                      {active && <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          ) : plusView === "timer" ? (
+            <motion.div
+              key="timer"
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.18 }}
+              className="flex flex-col"
+            >
+              <div className="flex items-center gap-1 px-1.5 pt-1 pb-2">
+                <motion.button whileTap={{ scale: 0.92 }} onClick={() => setPlusView("main")} className="w-7 h-7 flex items-center justify-center rounded-full liquid-glass-hover" aria-label="Back">
+                  <ChevronLeft className="w-4 h-4 text-foreground/80" />
+                </motion.button>
+                <span className="text-[13px] font-semibold text-foreground/85">Focus timer</span>
+              </div>
+              <div className="px-2 pb-1">
+                <div className="grid grid-cols-4 gap-1.5 mb-2">
+                  {[15, 25, 45, 60].map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setTimerInputMin(m)}
+                      className={`py-2 rounded-xl text-[12.5px] font-semibold transition-colors ${timerInputMin === m ? "bg-emerald-600 text-white" : "liquid-glass-hover text-foreground/85"}`}
+                    >
+                      {m}m
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={180}
+                    value={timerInputMin}
+                    onChange={(e) => setTimerInputMin(Math.max(1, Math.min(180, parseInt(e.target.value || "0") || 1)))}
+                    className="flex-1 bg-transparent border border-border/40 rounded-xl px-3 py-2 text-[13px] text-foreground outline-none focus:border-emerald-500/60"
+                  />
+                  <span className="text-[12px] text-muted-foreground">minutes</span>
+                </div>
+                <button
+                  onClick={() => {
+                    const id = `timer-${Date.now()}`;
+                    setStudyTimers((prev) => [...prev, { id, totalSec: timerInputMin * 60, startedAt: Date.now(), paused: false, pausedRemaining: null }]);
+                    setPlusMenuOpen(false);
+                    setTimeout(() => scrollToBottom(), 100);
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-[13px] font-semibold hover:bg-emerald-500 transition-colors"
+                >
+                  <Play className="w-4 h-4" fill="currentColor" /> Start session
+                </button>
+              </div>
+            </motion.div>
           ) : (
             <motion.div
               key="tools"
