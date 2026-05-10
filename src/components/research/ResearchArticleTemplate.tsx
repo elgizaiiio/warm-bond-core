@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import { motion } from "framer-motion";
 import { ExternalLink } from "lucide-react";
 import { TemplateProps, splitIntoSections, hostname } from "./templateUtils";
+import SmartImage from "./SmartImage";
 
 /**
  * Editorial reading template inspired by leerob.com and Vercel's open-source blog.
