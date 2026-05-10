@@ -168,7 +168,7 @@ const ResearchArticleTemplate = ({
             transition={{ duration: 0.7, delay: 0.1 }}
             className="mx-auto mb-12 max-w-[1100px] overflow-hidden sm:mb-16"
           >
-            <img src={cover} alt="" className="aspect-[16/9] w-full object-cover" loading="eager" />
+            <SmartImage src={cover} loading="eager" />
           </motion.figure>
         )}
 
