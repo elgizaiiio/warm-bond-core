@@ -1044,6 +1044,8 @@ TEACHING RULES:
     } catch (e) {
       console.warn("safety wire error", (e as Error).message);
     }
+
+    const selectedTools: any[] = [];
     if (!isCasualMessage) {
       if (isShopping) selectedTools.push(...shoppingTools);
       else if (needsSearch) selectedTools.push(...searchTools);
