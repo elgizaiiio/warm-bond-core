@@ -2105,7 +2105,7 @@ Ask me anything to get started!`;
         {/* Messages area */}
         <div className="flex-1 overflow-y-auto min-h-0 relative" ref={messagesContainerRef} onScroll={handleScroll}>
           {loadingMessages && messages.length === 0 ? (
-            <div className="max-w-3xl mx-auto py-6 px-4 md:px-6 space-y-4 pb-44 md:pb-52">
+            <div className="max-w-3xl mx-auto pt-20 pb-44 md:pb-52 px-4 md:px-6 space-y-4">
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
                   <div
@@ -2133,7 +2133,7 @@ Ask me anything to get started!`;
               </motion.div>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2 pb-44 md:pb-52">
+            <div className="max-w-3xl mx-auto pt-20 pb-44 md:pb-52 px-4 md:px-6 space-y-2">
               {messages.map((msg, i) => {
                 const isOther = msg.role === "user" && !!msg.user_id && !!chatUserId && msg.user_id !== chatUserId;
                 const isStreamingThis = isLoading && i === messages.length - 1 && msg.role === "assistant";
@@ -2180,7 +2180,7 @@ Ask me anything to get started!`;
               })}
               {/* Sticky in-chat focus timers — float above messages while scrolling */}
               {studyTimers.length > 0 && (
-                <div className="sticky top-2 z-30 flex flex-col gap-2 pointer-events-none">
+                <div className="sticky top-16 z-30 flex flex-col gap-2 pointer-events-none">
                   <AnimatePresence>
                     {studyTimers.map((t) => (
                       <div key={t.id} className="pointer-events-auto">

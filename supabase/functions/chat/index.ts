@@ -1646,6 +1646,15 @@ async function handleToolCalls(
         const searchTaskId = newTaskId();
         emitTaskStart(searchTaskId, "search", `Searching the web`, searchQuery);
         pushStatus(isDeepResearch ? "Gathering trusted sources..." : "Searching the web...");
+        if (isDeepResearch) {
+          const q = searchQuery.slice(0, 70);
+          narrate(N(
+            `Searching the web for: "${q}"…`,
+            `بدور دلوقتي على معلومات عن: «${q}»…`,
+            `Je cherche sur le web : « ${q} »…`,
+            `Buscando en la web: « ${q} »…`
+          ));
+        }
 
         const searchRequest = fetchWithTimeout("https://google.serper.dev/search", {
           method: "POST",
@@ -1703,12 +1712,26 @@ async function handleToolCalls(
           (searchData.organic || []).forEach((r: any) => { if (r?.link) researchSourcesSet.add(r.link); });
           researchChannels.add("Web");
           emitTaskDone(searchTaskId, `${organicCount} results`);
+          if (organicCount > 0) {
+            narrate(N(
+              `Great — I found ${organicCount} solid results. Reviewing them now…`,
+              `تمام، لقيت ${organicCount} نتيجة مفيدة. هراجعها دلوقتي…`,
+              `Super — ${organicCount} résultats solides trouvés. Je les analyse…`,
+              `Genial — encontré ${organicCount} resultados sólidos. Los estoy revisando…`
+            ));
+          }
         }
 
         // ── Deep Research enrichment: layer multiple free open sources in parallel.
         if (isDeepResearch && deepEnrichmentRuns < 1) {
           deepEnrichmentRuns += 1;
           pushStatus("Consulting Wikipedia, arXiv, Reddit, Hacker News...");
+          narrate(N(
+            `Now I'm cross-checking with Wikipedia, arXiv, Reddit and Hacker News…`,
+            `هتأكد من المعلومة من ويكيبيديا و arXiv و Reddit و Hacker News…`,
+            `Je recoupe avec Wikipedia, arXiv, Reddit et Hacker News…`,
+            `Estoy contrastando con Wikipedia, arXiv, Reddit y Hacker News…`
+          ));
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "multi_source_started", query: searchQuery })}\n\n`));
           const [wiki, arxiv, reddit, hn] = await Promise.allSettled([
             searchWikipedia(searchQuery),
@@ -1738,6 +1761,12 @@ async function handleToolCalls(
           const topLinks: string[] = (searchData.organic || []).slice(0, 1).map((r: any) => r.link).filter(Boolean);
           if (topLinks.length > 0) {
             pushStatus("Reading top sources in depth...");
+            narrate(N(
+              `Diving into the strongest source for full context…`,
+              `هغوص في أقوى مصدر علشان آخد السياق الكامل…`,
+              `Je plonge dans la meilleure source pour le contexte complet…`,
+              `Profundizando en la mejor fuente para tener el contexto completo…`
+            ));
             const readIds = topLinks.map((u) => { const id = newTaskId(); emitTaskStart(id, "read", "Reading source in depth", u); return id; });
             const reads = await Promise.allSettled(topLinks.map((u) => readWithJina(u)));
             reads.forEach((res, i) => {
@@ -2309,6 +2338,15 @@ async function handleToolCalls(
     }
 
     pushStatus(isDeepResearch ? "Writing the report now..." : (isShopping ? "Preparing recommendations..." : "Writing response..."));
+    if (isDeepResearch) {
+      const srcCount = researchSourcesSet.size;
+      narrate(N(
+        `I've gathered ${srcCount} sources. Now putting it all together into one clean report…`,
+        `جمعت ${srcCount} مصدر. هركّب كل المعلومات دلوقتي في تقرير منظم ومفصّل…`,
+        `J'ai rassemblé ${srcCount} sources. Je compose maintenant un rapport clair et complet…`,
+        `Reuní ${srcCount} fuentes. Ahora estoy armando un informe claro y completo…`
+      ));
+    }
     if (isDeepResearch) {
       const synthId = newTaskId();
       emitTaskStart(synthId, "synthesize", "Synthesizing findings into a structured report");
