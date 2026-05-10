@@ -1798,12 +1798,7 @@ async function handleToolCalls(
         if (isDeepResearch && deepEnrichmentRuns < 1) {
           deepEnrichmentRuns += 1;
           pushStatus("Consulting Wikipedia, arXiv, Reddit, Hacker News...");
-          narrate(N(
-            `Now I'm cross-checking with Wikipedia, arXiv, Reddit and Hacker News…`,
-            `هتأكد من المعلومة من ويكيبيديا و arXiv و Reddit و Hacker News…`,
-            `Je recoupe avec Wikipedia, arXiv, Reddit et Hacker News…`,
-            `Estoy contrastando con Wikipedia, arXiv, Reddit y Hacker News…`
-          ));
+          await aiNarrate(`Tell the user you're now cross-checking the same topic against Wikipedia, arXiv, Reddit and Hacker News to verify and add depth.`);
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "multi_source_started", query: searchQuery })}\n\n`));
           const [wiki, arxiv, reddit, hn] = await Promise.allSettled([
             searchWikipedia(searchQuery),
