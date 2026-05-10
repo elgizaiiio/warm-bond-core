@@ -4,6 +4,7 @@ import { ArrowLeft, Download, Loader2, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { detectResearchReportDirection, normalizeResearchReport } from "@/lib/normalizeResearchReport";
 import { toast } from "sonner";
+import { goBackOr } from "@/lib/navigation";
 import {
   ReportData,
   extractUrls,
@@ -218,7 +219,7 @@ const ResearchPreviewPage = () => {
       <header className="sticky top-0 z-30 border-b border-foreground/10 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3 sm:px-6">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => goBackOr(navigate, "/chat")}
             className="-ms-1 flex h-9 w-9 items-center justify-center rounded-full text-foreground/80 hover:bg-foreground/5 transition"
             aria-label="Back"
           >
