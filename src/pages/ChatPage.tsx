@@ -766,7 +766,8 @@ const ChatPage = () => {
   const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
-    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);isSubmittingRef.current = false;
+    if (studyAudioRef.current) { studyAudioRef.current.pause(); studyAudioRef.current.src = ""; }
+    setStudyTimers([]);setStudyMusic({ kind: null });setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);isSubmittingRef.current = false;
   };
 
   const loadUserTracks = useCallback(async () => {
@@ -781,6 +782,13 @@ const ChatPage = () => {
   }, []);
 
   useEffect(() => { loadUserTracks(); }, [loadUserTracks]);
+
+  useEffect(() => {
+    if (chatMode === "learning") return;
+    if (studyAudioRef.current) { studyAudioRef.current.pause(); studyAudioRef.current.src = ""; }
+    setStudyMusic({ kind: null });
+    setStudyTimers([]);
+  }, [chatMode]);
 
   const playUserTrack = useCallback(async (track: { id: string; name: string; storage_path: string }) => {
     const { data, error } = await supabase.storage.from("user-music").createSignedUrl(track.storage_path, 3600);
