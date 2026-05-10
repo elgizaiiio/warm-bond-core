@@ -2133,7 +2133,7 @@ Ask me anything to get started!`;
               </motion.div>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto py-4 px-4 md:px-6 space-y-2 pb-44 md:pb-52">
+            <div className="max-w-3xl mx-auto pt-20 pb-44 md:pb-52 px-4 md:px-6 space-y-2">
               {messages.map((msg, i) => {
                 const isOther = msg.role === "user" && !!msg.user_id && !!chatUserId && msg.user_id !== chatUserId;
                 const isStreamingThis = isLoading && i === messages.length - 1 && msg.role === "assistant";
