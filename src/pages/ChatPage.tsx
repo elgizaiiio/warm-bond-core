@@ -197,7 +197,12 @@ const ChatPage = () => {
   const [selectedModel, setSelectedModel] = useState<AgentModel | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<AgentDef | null>(null);
   const [userName, setUserName] = useState<string>("");
-  const [plusView, setPlusView] = useState<"main" | "tools" | "models" | "skills">("main");
+  const [plusView, setPlusView] = useState<"main" | "tools" | "models" | "skills" | "music" | "timer">("main");
+  const [studyMusic, setStudyMusic] = useState<{ kind: string | null }>({ kind: null });
+  const [readAloud, setReadAloud] = useState(false);
+  const [studyTimers, setStudyTimers] = useState<Array<{ id: string; totalSec: number; startedAt: number; paused: boolean; pausedRemaining: number | null }>>([]);
+  const [timerInputMin, setTimerInputMin] = useState<number>(25);
+  const studyAudioRef = useRef<HTMLAudioElement | null>(null);
   const [userIntegrations, setUserIntegrations] = useState<string[]>([]);
 
   const upsertResearchTask = useCallback((task: ResearchTask) => {
