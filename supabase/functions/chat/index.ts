@@ -1712,12 +1712,26 @@ async function handleToolCalls(
           (searchData.organic || []).forEach((r: any) => { if (r?.link) researchSourcesSet.add(r.link); });
           researchChannels.add("Web");
           emitTaskDone(searchTaskId, `${organicCount} results`);
+          if (organicCount > 0) {
+            narrate(N(
+              `Great — I found ${organicCount} solid results. Reviewing them now…`,
+              `تمام، لقيت ${organicCount} نتيجة مفيدة. هراجعها دلوقتي…`,
+              `Super — ${organicCount} résultats solides trouvés. Je les analyse…`,
+              `Genial — encontré ${organicCount} resultados sólidos. Los estoy revisando…`
+            ));
+          }
         }
 
         // ── Deep Research enrichment: layer multiple free open sources in parallel.
         if (isDeepResearch && deepEnrichmentRuns < 1) {
           deepEnrichmentRuns += 1;
           pushStatus("Consulting Wikipedia, arXiv, Reddit, Hacker News...");
+          narrate(N(
+            `Now I'm cross-checking with Wikipedia, arXiv, Reddit and Hacker News…`,
+            `هتأكد من المعلومة من ويكيبيديا و arXiv و Reddit و Hacker News…`,
+            `Je recoupe avec Wikipedia, arXiv, Reddit et Hacker News…`,
+            `Estoy contrastando con Wikipedia, arXiv, Reddit y Hacker News…`
+          ));
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "multi_source_started", query: searchQuery })}\n\n`));
           const [wiki, arxiv, reddit, hn] = await Promise.allSettled([
             searchWikipedia(searchQuery),
