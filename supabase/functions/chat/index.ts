@@ -983,6 +983,41 @@ TEACHING RULES:
         // best-effort; never let skills loading break the chat
       }
     }
+    // ── Internal Intent Router (mood/dialect/persona/tool detection) ──
+    let routerDecision: any = null;
+    let userChatSettings: any = null;
+    if (!isCasualMessage && (lovKey || orKey)) {
+      try {
+        const { routeMessage, buildPersonaPrompt } = await import("../_shared/router.ts");
+        const recentCtx = (Array.isArray(messages) && messages.length > 1)
+          ? (messages.slice(-3, -1).map((m: any) => typeof m.content === "string" ? m.content : "").join(" ").slice(0, 300))
+          : "";
+        routerDecision = await routeMessage(latestUserText, lovKey || orKey || "", recentCtx);
+
+        // Load user persona/settings
+        if (user_id) {
+          const settingsRes = await sb.from("user_chat_settings").select("*").eq("user_id", user_id).maybeSingle();
+          userChatSettings = settingsRes?.data || null;
+        }
+
+        // Inject persona/mood/dialect adjustments into system prompt
+        const personaAddon = buildPersonaPrompt(routerDecision, userChatSettings?.persona);
+        if (personaAddon) systemPrompt += personaAddon;
+
+        // Log router decision (best-effort)
+        if (user_id) {
+          sb.from("chat_router_logs").insert({
+            user_id,
+            conversation_id: conversation_id || null,
+            user_text: latestUserText.slice(0, 500),
+            routed: routerDecision,
+          }).then(() => {}).catch(() => {});
+        }
+      } catch (e) {
+        console.warn("router error", (e as Error).message);
+      }
+    }
+
     const selectedTools: any[] = [];
     if (!isCasualMessage) {
       if (isShopping) selectedTools.push(...shoppingTools);
@@ -1001,6 +1036,16 @@ TEACHING RULES:
       if (mentionsIntegrations) selectedTools.push(...composioTools);
       // Internal Megsy tools — always available when authenticated, low cost to expose
       selectedTools.push(...megsyInternalTools);
+
+      // Extra free knowledge tools — load only those router suggested (or all if router skipped)
+      try {
+        const { EXTRA_TOOL_DEFS } = await import("../_shared/extra-tools.ts");
+        const wanted = new Set<string>(routerDecision?.tools_needed || []);
+        const extras = wanted.size > 0
+          ? EXTRA_TOOL_DEFS.filter((t: any) => wanted.has(t.function.name))
+          : EXTRA_TOOL_DEFS; // default: expose all (low cost)
+        selectedTools.push(...extras);
+      } catch (e) { console.warn("extra tools load failed", (e as Error).message); }
     }
 
     // Trim messages aggressively for speed
@@ -1024,6 +1069,11 @@ TEACHING RULES:
     if (selectedTools.length > 0) {
       body.tools = selectedTools;
       body.tool_choice = "auto";
+    }
+
+    // Auto-enable reasoning for complex tasks (CoT)
+    if (routerDecision?.needs_reasoning && routerDecision?.complexity === "complex" && !isCasualMessage) {
+      body.reasoning = { effort: "medium" };
     }
 
     // Shopping forces a search flow without requiring Hyperbrowser. Deep research still needs HB for browser steps.
@@ -2423,6 +2473,20 @@ async function handleToolCalls(
         continue;
       }
 
+      // Free knowledge tools (Wikipedia, arXiv, GitHub, Reddit, StackOverflow, GDELT News, MathSolver)
+      const EXTRA_TOOL_NAMES = new Set(["WIKIPEDIA", "ARXIV", "GITHUB_SEARCH", "REDDIT_SEARCH", "STACKOVERFLOW", "NEWS_SEARCH", "MATH_SOLVER"]);
+      if (EXTRA_TOOL_NAMES.has(toolName)) {
+        pushStatus(`Looking up ${toolName.toLowerCase().replace("_", " ")}...`);
+        try {
+          const { execExtraTool } = await import("../_shared/extra-tools.ts");
+          const result = await execExtraTool(toolName, toolArgs);
+          allSearchResults.push(`${toolName} (${JSON.stringify(toolArgs).slice(0, 120)}):\n${result}`);
+        } catch (e) {
+          allSearchResults.push(`${toolName} failed: ${(e as Error).message}`);
+        }
+        continue;
+      }
+
       // Internal tools that must never route into the Composio "Connect account" flow.
       // If we got here it means the relevant API key (Serper / Hyperbrowser / etc.) is
       // missing — emit a clean fallback message instead of asking the user to connect a
@@ -2431,6 +2495,7 @@ async function handleToolCalls(
         "WEB_SEARCH", "BROWSE_WEBSITE", "SHOPPING_SEARCH", "CONVERT_CURRENCY",
         "GENERATE_IMAGE", "GENERATE_VIDEO", "GENERATE_VOICE", "CANVA_CREATE_SLIDES",
         "REMEMBER_FACT", "SEARCH_ATTACHMENTS", "CODE_INTERPRETER", "FETCH_URL",
+        "WIKIPEDIA", "ARXIV", "GITHUB_SEARCH", "REDDIT_SEARCH", "STACKOVERFLOW", "NEWS_SEARCH", "MATH_SOLVER",
       ]);
       const INTERNAL_PREFIXES = ["WEB", "BROWSE", "SEARCH", "SHOPPING", "FETCH", "GENERATE", "CODE", "REMEMBER", "CONVERT", "CANVA"];
       const KNOWN_COMPOSIO_APPS = new Set([
