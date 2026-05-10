@@ -315,8 +315,12 @@ function makeStreamSanitizer() {
       .replace(/(?:^|\n)[^\n]*(?:print\s*\(\s*)?default_api\.[^\n]*(?:\n|$)/gi, "\n");
 
   const splitHold = (s: string, force = false) => {
-    if (force) return { safe: s, hold: "" };
     const lower = s.toLowerCase();
+    if (force) {
+      return dangerousMarkers.some((marker) => marker.startsWith(lower.trim()))
+        ? { safe: "", hold: "" }
+        : { safe: s, hold: "" };
+    }
     const max = Math.min(80, s.length);
     for (let len = max; len > 0; len--) {
       const suffix = lower.slice(-len);
