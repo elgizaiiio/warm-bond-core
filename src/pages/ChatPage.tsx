@@ -1786,42 +1786,7 @@ Ask me anything to get started!`;
       onNewChat={handleNewChat}
       activeConversationId={conversationId}>
       
-      <div className={`h-[100dvh] flex flex-col bg-background overflow-hidden transition-colors duration-500 ${studyFocus ? "learn-focus" : ""}`}>
-        {chatMode === "learning" && studySession?.active && (
-          <>
-            <div className="fixed top-2 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2">
-              <StudyTimer
-                durationMin={studySession.durationMin}
-                pomodoro
-                onEnd={async () => {
-                  setStudyBuddyMood("celebrate");
-                  try {
-                    const elapsed = Math.round((Date.now() - studySession.startedAt) / 60000);
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (user) {
-                      await supabase.from("learn_sessions").insert({
-                        user_id: user.id,
-                        conversation_id: conversationId,
-                        topic: studySession.topic || "جلسة مذاكرة",
-                        duration_min: elapsed,
-                      });
-                    }
-                  } catch (e) { console.warn("learn_sessions insert failed", e); }
-                  setTimeout(() => { setStudySession(null); setStudyBuddyMood("idle"); }, 4000);
-                }}
-                onStop={() => setStudySession(null)}
-              />
-              <StudyMusic autoStart={false} />
-              <button
-                onClick={() => setStudySession(null)}
-                className="text-[11px] px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-300 border border-rose-400/30 hover:bg-rose-500/20"
-              >
-                إنهاء
-              </button>
-            </div>
-            <StudyBuddy mood={studyBuddyMood} />
-          </>
-        )}
+      <div className="h-[100dvh] flex flex-col bg-background overflow-hidden">
         <AppSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
