@@ -674,20 +674,15 @@ const ChatMessage = ({ role, content, messageIndex, isStreaming, isThinking, ima
       (isDeepResearch === true));
   const showResearchCard = looksLikeResearch && !isStreaming && content.trim().length > 200;
 
-  const showResearchPanels = role === "assistant" && isDeepResearch && (researchPlan || (researchTasks && researchTasks.length > 0) || researchSummary);
+  const showNarration = role === "assistant" && isDeepResearch && narrations && narrations.length > 0;
+  const isResearchActive = !!isStreaming || (!!isThinking && !content);
 
   return (
     <div className="mb-6 relative">
-      {showResearchPanels && (
-        <div className="space-y-2">
-          {researchPlan && <ResearchPlanCard plan={researchPlan} />}
-          {researchTasks && researchTasks.length > 0 && (
-            <ResearchTaskTimeline tasks={researchTasks} isActive={!!isStreaming || (!!isThinking && !content)} />
-          )}
-          
-        </div>
+      {showNarration && (
+        <ResearchNarration items={narrations!} active={isResearchActive} />
       )}
-      {isThinking && !content && !showResearchPanels ? (
+      {isThinking && !content && !showNarration ? (
         <ThinkingLoader searchStatus={searchStatus} />
       ) : showResearchCard ? (
         <DeepResearchCard
