@@ -15,7 +15,7 @@ interface Props {
  * - hides itself completely on load error (no broken icon)
  * - shows a soft skeleton while loading
  */
-const SmartImage = ({ src, alt = "", className = "", loading = "lazy", aspect = "aspect-[16/9]" }: Props) => {
+const SmartImage = ({ src, alt = "", className = "", loading = "lazy" }: Props) => {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -23,9 +23,9 @@ const SmartImage = ({ src, alt = "", className = "", loading = "lazy", aspect = 
   if (!ok || failed) return null;
 
   return (
-    <div className={`relative w-full ${aspect} overflow-hidden bg-muted/40`}>
+    <div className="relative w-full overflow-hidden rounded-xl bg-muted/30">
       {!loaded && (
-        <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-muted/60 to-muted/20" />
+        <div className="aspect-[16/9] w-full animate-pulse bg-gradient-to-br from-muted/60 to-muted/20" />
       )}
       <img
         src={src}
@@ -35,7 +35,6 @@ const SmartImage = ({ src, alt = "", className = "", loading = "lazy", aspect = 
         crossOrigin="anonymous"
         onLoad={(e) => {
           const img = e.currentTarget;
-          // hide tiny tracking pixels / broken thumbnails
           if (img.naturalWidth < 200 || img.naturalHeight < 150) {
             setFailed(true);
             return;
@@ -43,7 +42,7 @@ const SmartImage = ({ src, alt = "", className = "", loading = "lazy", aspect = 
           setLoaded(true);
         }}
         onError={() => setFailed(true)}
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"} ${className}`}
+        className={`block w-full h-auto max-h-[80vh] object-contain transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0 absolute inset-0"} ${className}`}
       />
     </div>
   );
