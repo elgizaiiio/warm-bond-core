@@ -20,7 +20,6 @@ import { useSkills } from "@/hooks/useSkills";
 
 import DeepResearchToggle from "@/components/research/DeepResearchToggle";
 import LearnModeToggle from "@/components/learn/LearnModeToggle";
-import StudyTimer from "@/components/learn/StudyTimer";
 import AnimatedHeadline from "@/components/research/AnimatedHeadline";
 import ClarifyDialog, { type ClarifyQuestion } from "@/components/research/ClarifyDialog";
 import type { ResearchTask } from "@/components/research/ResearchTaskTimeline";
