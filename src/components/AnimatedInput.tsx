@@ -5,6 +5,7 @@ import MentionDropdown from "./MentionDropdown";
 import ModelPickerDropdown from "./ModelPickerDropdown";
 import type { AgentDef, AgentModel } from "@/lib/agentRegistry";
 import { getAgentById } from "@/lib/agentRegistry";
+import { TypingAnimation } from "@/components/ui/typing-animation";
 
 interface SmartQuestion {
   title: string;
