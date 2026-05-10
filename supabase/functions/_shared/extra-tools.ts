@@ -256,3 +256,109 @@ function mathSolve(expression: string): string {
     return JSON.stringify({ error: "Could not evaluate", expression });
   }
 }
+
+// ── Phase 3 handlers ──
+
+async function youtubeTranscript(url: string, lang: string): Promise<string> {
+  const key = Deno.env.get("SUPADATA_API_KEY") || Deno.env.get("SUPADATA_API_KEY_2") || Deno.env.get("SUPADATA_API_KEY_3");
+  if (!key) return JSON.stringify({ error: "transcript service not configured" });
+  const api = `https://api.supadata.ai/v1/youtube/transcript?url=${encodeURIComponent(url)}&lang=${lang}&text=true`;
+  const r = await fetch(api, { headers: { "x-api-key": key } });
+  if (!r.ok) return JSON.stringify({ error: `transcript ${r.status}` });
+  const data = await r.json();
+  const text = (data?.content || data?.text || "").slice(0, 6000);
+  return JSON.stringify({ url, lang: data?.lang || lang, transcript: text });
+}
+
+async function googleScholar(query: string, limit: number): Promise<string> {
+  const key = Deno.env.get("SERPER_API_KEY");
+  if (!key) return JSON.stringify({ error: "scholar service not configured" });
+  const r = await fetch("https://google.serper.dev/scholar", {
+    method: "POST",
+    headers: { "X-API-KEY": key, "Content-Type": "application/json" },
+    body: JSON.stringify({ q: query, num: limit }),
+  });
+  if (!r.ok) return JSON.stringify({ error: `scholar ${r.status}` });
+  const data = await r.json();
+  const items = (data.organic || []).slice(0, limit).map((it: any) => ({
+    title: it.title, link: it.link, snippet: it.snippet,
+    publication: it.publicationInfo?.summary, citedBy: it.citedBy?.total, year: it.year,
+  }));
+  return JSON.stringify({ results: items });
+}
+
+async function hackerNews(query: string, limit: number): Promise<string> {
+  const url = `https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(query)}&hitsPerPage=${limit}`;
+  const data = await fetch(url).then((r) => r.json());
+  const items = (data.hits || []).map((h: any) => ({
+    title: h.title || h.story_title,
+    url: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`,
+    points: h.points, author: h.author, comments: h.num_comments, created_at: h.created_at,
+  }));
+  return JSON.stringify({ results: items });
+}
+
+async function ddgInstant(query: string): Promise<string> {
+  const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
+  const data = await fetch(url).then((r) => r.json());
+  return JSON.stringify({
+    abstract: data.AbstractText, source: data.AbstractSource, url: data.AbstractURL,
+    answer: data.Answer, definition: data.Definition, heading: data.Heading,
+    related: (data.RelatedTopics || []).slice(0, 5).map((t: any) => ({ text: t.Text, url: t.FirstURL })),
+  });
+}
+
+async function urlFetch(url: string, maxChars: number): Promise<string> {
+  const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 MegsyBot/1.0" } });
+  if (!r.ok) return JSON.stringify({ error: `fetch ${r.status}`, url });
+  const html = await r.text();
+  // Strip scripts/styles/tags → readable text
+  const text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxChars);
+  return JSON.stringify({ url, text });
+}
+
+async function openLibrary(query: string, limit: number): Promise<string> {
+  const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${limit}`;
+  const data = await fetch(url).then((r) => r.json());
+  const items = (data.docs || []).slice(0, limit).map((b: any) => ({
+    title: b.title, author: (b.author_name || []).join(", "),
+    year: b.first_publish_year, subjects: (b.subject || []).slice(0, 5),
+    url: b.key ? `https://openlibrary.org${b.key}` : null,
+  }));
+  return JSON.stringify({ results: items });
+}
+
+async function worldBank(country: string, indicator: string): Promise<string> {
+  const url = `https://api.worldbank.org/v2/country/${country}/indicator/${indicator}?format=json&per_page=5`;
+  const data = await fetch(url).then((r) => r.json());
+  const rows = Array.isArray(data) && data[1] ? data[1].slice(0, 5).map((d: any) => ({
+    country: d.country?.value, indicator: d.indicator?.value, year: d.date, value: d.value,
+  })) : [];
+  return JSON.stringify({ results: rows });
+}
+
+async function currencyConvert(from: string, to: string, amount: number): Promise<string> {
+  const url = `https://api.frankfurter.app/latest?amount=${amount}&from=${from.toUpperCase()}&to=${to.toUpperCase()}`;
+  const data = await fetch(url).then((r) => r.json());
+  return JSON.stringify({ from, to, amount, result: data?.rates?.[to.toUpperCase()], date: data?.date });
+}
+
+async function weather(location: string): Promise<string> {
+  // Geocode
+  const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1`).then((r) => r.json());
+  const place = geo?.results?.[0];
+  if (!place) return JSON.stringify({ error: "location not found" });
+  const wx = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,weather_code&forecast_days=3&timezone=auto`).then((r) => r.json());
+  return JSON.stringify({
+    location: `${place.name}, ${place.country}`,
+    current: wx.current,
+    daily: wx.daily,
+  });
+}
