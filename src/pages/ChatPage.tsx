@@ -216,6 +216,12 @@ const ChatPage = () => {
     return `Got it — you want deep research about: “${topic}”. I’ll start gathering real sources and keep you updated step by step.`;
   }, []);
 
+  const buildFinalResearchNarration = useCallback((text: string) => {
+    return /[\u0600-\u06FF]/.test(text)
+      ? "خلصت البحث وجمعت المصادر وركّبت التقرير النهائي بشكل منظم. تقدر تفتح المعاينة وتشوف النسخة المناسبة للقراءة."
+      : "Research is complete — I gathered sources, cross-checked them, and assembled the final structured report for preview.";
+  }, []);
+
   // Fetch user info for memory + welcome message
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
