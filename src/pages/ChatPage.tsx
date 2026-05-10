@@ -1520,6 +1520,81 @@ Ask me anything to get started!`;
                 ))}
               </div>
 
+              {chatMode === "learning" ? (
+                <>
+                  {/* Play music */}
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    transition={iosSpring}
+                    onClick={() => setPlusView("music")}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl liquid-glass-hover transition-colors text-left"
+                  >
+                    <Music2 className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
+                    <span className="flex-1 text-[13.5px] text-foreground/85">Play music</span>
+                    <span className="text-[12px] font-medium text-foreground/70 truncate max-w-[8rem]">
+                      {studyMusic.kind || "Off"}
+                    </span>
+                    <ChevronDown className="w-4 h-4 -rotate-90 text-muted-foreground" />
+                  </motion.button>
+
+                  {/* Focus timer */}
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    transition={iosSpring}
+                    onClick={() => setPlusView("timer")}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl liquid-glass-hover transition-colors text-left"
+                  >
+                    <Timer className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
+                    <span className="flex-1 text-[13.5px] text-foreground/85">Focus timer</span>
+                    <ChevronDown className="w-4 h-4 -rotate-90 text-muted-foreground" />
+                  </motion.button>
+
+                  {/* Flashcards */}
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    transition={iosSpring}
+                    onClick={() => { setPlusMenuOpen(false); handleSendWithText("Generate 5 concise flashcards (front/back) from our current conversation."); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl liquid-glass-hover transition-colors text-left"
+                  >
+                    <Layers className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
+                    <span className="flex-1 text-[13.5px] text-foreground/85">Flashcards</span>
+                  </motion.button>
+
+                  {/* Quick quiz */}
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    transition={iosSpring}
+                    onClick={() => { setPlusMenuOpen(false); handleSendWithText("Give me a 5-question quiz on what we just discussed. Wait for my answers, then grade them."); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl liquid-glass-hover transition-colors text-left"
+                  >
+                    <ClipboardCheck className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
+                    <span className="flex-1 text-[13.5px] text-foreground/85">Quick quiz</span>
+                  </motion.button>
+
+                  {/* Read aloud toggle */}
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    transition={iosSpring}
+                    onClick={() => setReadAloud((v) => !v)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl liquid-glass-hover transition-colors text-left"
+                  >
+                    <Volume2 className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
+                    <span className="flex-1 text-[13.5px] text-foreground/85">Read aloud</span>
+                    <div
+                      className="relative shrink-0 rounded-full transition-colors duration-200 ease-out"
+                      style={{ width: 40, height: 24, backgroundColor: readAloud ? "#059669" : "#e9e9eb" }}
+                    >
+                      <motion.div
+                        layout
+                        transition={iosSpring}
+                        className="absolute top-1/2 rounded-full bg-white"
+                        style={{ width: 20, height: 20, marginTop: -10, left: readAloud ? 18 : 2, boxShadow: "0px 3px 8px rgba(0,0,0,0.15)" }}
+                      />
+                    </div>
+                  </motion.button>
+                </>
+              ) : (
+                <>
               {/* Web search row */}
               <motion.button
                 whileTap={{ scale: 0.97 }}
@@ -1597,7 +1672,8 @@ Ask me anything to get started!`;
                 </span>
                 <ChevronDown className="w-4 h-4 -rotate-90 text-muted-foreground" />
               </motion.button>
-            </motion.div>
+                </>
+              )}
           ) : plusView === "models" ? (
             <motion.div
               key="models"
