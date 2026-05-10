@@ -292,16 +292,42 @@ function isToolMarkerChunk(content: string): boolean {
 function makeStreamSanitizer() {
   let buf = "";
   let inForbiddenFence = false;
+  const dangerousMarkers = [
+    "${tool_code}",
+    "print(default_api.",
+    "default_api.",
+    "<tool_call",
+    "<function_call",
+    "```tool_code",
+    "```tool_call",
+    "```function_call",
+    "```python",
+  ];
   // Open patterns that always trigger a drop until the closing ```
   const FORBIDDEN_FENCE_RE = /```(?:tool_code|tool_call|function_call|python\s*\n[\s\S]*?default_api)/i;
   const stripInline = (s: string) =>
     s
+      .replace(/```(?:tool_code|tool_call|function_call|python)?[\s\S]*?(?:default_api|tool_code|tool_call|function_call)[\s\S]*?```/gi, "")
+      .replace(/<tool_call[\s\S]*?<\/tool_call>/gi, "")
+      .replace(/<function_call[\s\S]*?<\/function_call>/gi, "")
       .replace(/<\/?(?:tool_code|tool_call|function_call)[^>]*>/gi, "")
-      .replace(/^\s*print\s*\(\s*default_api\.[^\n]*\)\s*$/gim, "")
-      .replace(/^\s*default_api\.[a-z_]+\s*\([^\n]*\)\s*$/gim, "")
-      .replace(/\$\{tool_code\}/gi, "");
+      .replace(/\$\{tool_code\}\s*/gi, "")
+      .replace(/(?:^|\n)[^\n]*(?:print\s*\(\s*)?default_api\.[^\n]*(?:\n|$)/gi, "\n");
 
-  return (chunk: string): string => {
+  const splitHold = (s: string, force = false) => {
+    if (force) return { safe: s, hold: "" };
+    const lower = s.toLowerCase();
+    const max = Math.min(80, s.length);
+    for (let len = max; len > 0; len--) {
+      const suffix = lower.slice(-len);
+      if (dangerousMarkers.some((marker) => marker.startsWith(suffix))) {
+        return { safe: s.slice(0, -len), hold: s.slice(-len) };
+      }
+    }
+    return { safe: s, hold: "" };
+  };
+
+  return (chunk: string, force = false): string => {
     buf += chunk;
     let out = "";
     while (buf.length > 0) {
@@ -328,8 +354,9 @@ function makeStreamSanitizer() {
       }
       const m = buf.match(FORBIDDEN_FENCE_RE);
       if (!m || m.index === undefined) {
-        out += stripInline(buf);
-        buf = "";
+        const { safe, hold } = splitHold(buf, force);
+        out += stripInline(safe);
+        buf = hold;
         return out;
       }
       out += stripInline(buf.slice(0, m.index));
