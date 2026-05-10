@@ -58,6 +58,78 @@ export const EXTRA_TOOL_DEFS = [
       parameters: { type: "object", properties: { expression: { type: "string", description: "e.g. '2+2', 'sqrt(16)+5', '(3*4)/2'" } }, required: ["expression"] },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "YOUTUBE_TRANSCRIPT",
+      description: "Get the full transcript of a YouTube video. Use when user shares a YouTube URL or asks about video content.",
+      parameters: { type: "object", properties: { url: { type: "string", description: "YouTube video URL or ID" }, lang: { type: "string", default: "en" } }, required: ["url"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "GOOGLE_SCHOLAR",
+      description: "Search Google Scholar for academic papers and citations. Best for peer-reviewed research, scholarly articles.",
+      parameters: { type: "object", properties: { query: { type: "string" }, limit: { type: "number", default: 5 } }, required: ["query"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "HACKERNEWS",
+      description: "Search Hacker News for tech industry discussions, startup news, programming debates.",
+      parameters: { type: "object", properties: { query: { type: "string" }, limit: { type: "number", default: 5 } }, required: ["query"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "DUCKDUCKGO_INSTANT",
+      description: "Quick instant-answer lookup (definitions, calculations, simple facts) via DuckDuckGo. No API key.",
+      parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "URL_FETCH",
+      description: "Fetch and extract readable text content from any public URL. Use to read articles, docs, blog posts.",
+      parameters: { type: "object", properties: { url: { type: "string" }, max_chars: { type: "number", default: 4000 } }, required: ["url"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "OPEN_LIBRARY",
+      description: "Search Open Library for books (title, author, year, subjects). No API key.",
+      parameters: { type: "object", properties: { query: { type: "string" }, limit: { type: "number", default: 5 } }, required: ["query"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "WORLD_BANK",
+      description: "Fetch World Bank statistics for a country (GDP, population, etc). Use for economic/demographic data.",
+      parameters: { type: "object", properties: { country: { type: "string", description: "ISO country code, e.g. EG, US" }, indicator: { type: "string", description: "e.g. NY.GDP.MKTP.CD (GDP), SP.POP.TOTL (population)" } }, required: ["country", "indicator"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "CURRENCY_CONVERT",
+      description: "Convert between currencies using live exchange rates.",
+      parameters: { type: "object", properties: { from: { type: "string" }, to: { type: "string" }, amount: { type: "number", default: 1 } }, required: ["from", "to"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "WEATHER",
+      description: "Current weather and 3-day forecast for a city. Free, no API key.",
+      parameters: { type: "object", properties: { location: { type: "string" } }, required: ["location"] },
+    },
+  },
 ];
 
 export async function execExtraTool(name: string, args: Record<string, any>): Promise<string> {
