@@ -564,10 +564,11 @@ serve(async (req) => {
 
     if (user_id && !isCasualEarly) {
       try {
-        const [profileRes, personalizationRes, memoriesRes] = await Promise.all([
+        const [profileRes, personalizationRes, memoriesRes, kgRes] = await Promise.all([
           sb.from("profiles").select("display_name, plan, credits").eq("id", user_id).single(),
           sb.from("ai_personalization").select("call_name, about, profession, ai_traits, custom_instructions, tone_formality, tone_verbosity, tone_creativity, language_style, interests, preferred_tier").eq("user_id", user_id).maybeSingle(),
           sb.from("user_memories").select("fact, importance").eq("user_id", user_id).order("importance", { ascending: false }).order("created_at", { ascending: false }).limit(10),
+          sb.from("user_knowledge_graph").select("entity, relation, target_entity, confidence").eq("user_id", user_id).order("created_at", { ascending: false }).limit(20),
         ]);
 
         const parts: string[] = [];
@@ -600,6 +601,14 @@ serve(async (req) => {
           userMemories = memoriesRes.data;
           const memoryLines = memoriesRes.data.map((m: any) => `• ${m.fact}`).join("\n");
           parts.push(`\nRemembered facts about the user:\n${memoryLines}`);
+        }
+        if (kgRes.data && kgRes.data.length > 0) {
+          const kgLines = kgRes.data
+            .filter((t: any) => (t.confidence ?? 1) >= 0.5)
+            .slice(0, 15)
+            .map((t: any) => `• (${t.entity}) —${t.relation}→ (${t.target_entity})`)
+            .join("\n");
+          if (kgLines) parts.push(`\nKnowledge graph (user's world):\n${kgLines}`);
         }
         if (parts.length > 0) userContext = `\n\n--- USER CONTEXT ---\n${parts.join("\n")}`;
       } catch { /* silently skip */ }
