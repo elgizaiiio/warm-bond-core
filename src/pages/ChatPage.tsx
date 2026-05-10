@@ -1917,7 +1917,7 @@ Ask me anything to get started!`;
                   <div className="mt-2 px-3 text-[10px] uppercase tracking-wide text-muted-foreground/70">Library</div>
                 )}
                 {librarySkills.filter((l) => !mySkills.some((m) => m.name === l.name)).map((skill) => (
-                  <div key={`sys-${skill.id}`} className="px-3 py-2 rounded-2xl border border-transparent opacity-80">
+                  <div key={`sys-${skill.id}`} className="px-3 py-2 rounded-2xl opacity-80 hover:bg-muted/30 transition-colors">
                     <div className="flex items-center gap-2">
                       <span className="flex-1 text-[13px] font-medium text-foreground/85 truncate">{skill.name}</span>
                       <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Built-in</span>
