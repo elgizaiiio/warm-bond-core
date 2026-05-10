@@ -1447,6 +1447,25 @@ async function handleToolCalls(
   const researchChannels = new Set<string>();
   let deepEnrichmentRuns = 0;
 
+  // Detect user language for narration
+  const lastUserMsg = (originalBody?.messages || []).slice().reverse().find((m: any) => m?.role === "user");
+  const userText = typeof lastUserMsg?.content === "string" ? lastUserMsg.content : Array.isArray(lastUserMsg?.content) ? lastUserMsg.content.map((p: any) => p?.text || "").join(" ") : "";
+  const isArabic = /[\u0600-\u06FF]/.test(userText);
+  const isFrench = !isArabic && /\b(le|la|les|de|des|et|est|une|un|pour|avec|que|qui)\b/i.test(userText);
+  const isSpanish = !isArabic && !isFrench && /\b(el|la|los|las|de|que|en|para|con|por)\b/i.test(userText);
+  const N = (en: string, ar: string, fr?: string, es?: string) => isArabic ? ar : isFrench && fr ? fr : isSpanish && es ? es : en;
+  const narrate = (text: string) => {
+    if (!isDeepResearch) return;
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "narration", text })}\n\n`));
+  };
+  const topic = (userText || "").trim().slice(0, 80);
+  narrate(N(
+    `Got it — I'll do a deep dive on: "${topic}". Starting research now…`,
+    `تمام، فهمت إنك عايز بحث عميق عن: «${topic}». هبدأ دلوقتي…`,
+    `Compris — je lance une recherche approfondie sur : « ${topic} ». C'est parti…`,
+    `Entendido — voy a investigar a fondo: « ${topic} ». Empezando ahora…`
+  ));
+
   // ── Deep Research: produce a REAL, query-specific plan via a planning AI call.
   // No templates. The model thinks about THIS specific question and writes the plan
   // in the user's exact language.
