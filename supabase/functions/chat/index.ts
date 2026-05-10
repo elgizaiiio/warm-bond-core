@@ -2339,6 +2339,15 @@ async function handleToolCalls(
 
     pushStatus(isDeepResearch ? "Writing the report now..." : (isShopping ? "Preparing recommendations..." : "Writing response..."));
     if (isDeepResearch) {
+      const srcCount = researchSourcesSet.size;
+      narrate(N(
+        `I've gathered ${srcCount} sources. Now putting it all together into one clean report…`,
+        `جمعت ${srcCount} مصدر. هركّب كل المعلومات دلوقتي في تقرير منظم ومفصّل…`,
+        `J'ai rassemblé ${srcCount} sources. Je compose maintenant un rapport clair et complet…`,
+        `Reuní ${srcCount} fuentes. Ahora estoy armando un informe claro y completo…`
+      ));
+    }
+    if (isDeepResearch) {
       const synthId = newTaskId();
       emitTaskStart(synthId, "synthesize", "Synthesizing findings into a structured report");
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "synthesizing" })}\n\n`));
