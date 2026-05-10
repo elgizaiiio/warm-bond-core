@@ -817,8 +817,7 @@ const ChatPage = () => {
       setStudyMusic({ kind: null });
     }
   };
-
-
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
     const fileList = Array.from(files);
