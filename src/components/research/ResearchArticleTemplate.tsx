@@ -157,19 +157,6 @@ const ResearchArticleTemplate = ({
           >
             {data.query}
           </motion.h1>
-          <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-            <span>{dateText}</span>
-            <span aria-hidden>·</span>
-            <span>{readMins} {isRtl ? "دقيقة قراءة" : "min read"}</span>
-            <span aria-hidden>·</span>
-            <span>{wordCount.toLocaleString()} {isRtl ? "كلمة" : "words"}</span>
-            {sources.length > 0 && (
-              <>
-                <span aria-hidden>·</span>
-                <span>{sources.length} {isRtl ? "مصدر" : "sources"}</span>
-              </>
-            )}
-          </div>
         </header>
 
         {/* Cover image */}
