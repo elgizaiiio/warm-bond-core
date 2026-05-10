@@ -912,7 +912,15 @@ TEACHING RULES:
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         async start(controller) {
-          await handleToolCalls(controller, encoder, forcedToolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
+          try {
+            await handleToolCalls(controller, encoder, forcedToolCalls, body, apiUrl, apiKey, modelId, SERPER_API_KEY, COMPOSIO_API_KEY, isDeepResearch, isShopping, searchTools, sb, 0, HB_API_KEY);
+          } catch (e) {
+            console.error("forced tool flow error:", e);
+            const fallback = /[\u0600-\u06FF]/.test(latestUserText)
+              ? `# ${latestUserText}\n\nتعذّر إكمال جمع المصادر الحية هذه المرة، لكن تم حفظ المحادثة بشكل صحيح. حاول تشغيل Deep Research مرة أخرى بعد لحظات للحصول على التقرير الكامل.`
+              : `# ${latestUserText}\n\nLive source collection could not finish this time, but the conversation was saved correctly. Please run Deep Research again in a moment for the full report.`;
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: fallback } }] })}\n\n`));
+          }
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
         },
