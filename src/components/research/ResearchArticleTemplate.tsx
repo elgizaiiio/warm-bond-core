@@ -142,9 +142,9 @@ const ResearchArticleTemplate = ({
 
   return (
     <div className="bg-background text-foreground">
-      <article className="mx-auto max-w-[1200px] px-5 sm:px-8 lg:px-12">
+      <article className="mx-auto max-w-[1200px] px-4 sm:px-8 lg:px-12">
         {/* Header */}
-        <header className="mx-auto max-w-[760px] pt-12 pb-10 sm:pt-20 sm:pb-14">
+        <header className="mx-auto max-w-[760px] pt-8 pb-8 sm:pt-20 sm:pb-14">
           <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
             {isRtl ? "بحث معمّق" : "Deep Research"}
           </div>
@@ -153,7 +153,7 @@ const ResearchArticleTemplate = ({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-4 font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl md:text-6xl"
+            className="mt-4 break-words font-display text-3xl font-semibold tracking-tight text-foreground sm:text-5xl md:text-6xl"
           >
             {data.query}
           </motion.h1>
@@ -174,7 +174,7 @@ const ResearchArticleTemplate = ({
         {/* Body + sticky TOC */}
         <div className="grid gap-12 lg:grid-cols-[1fr_220px] lg:gap-16">
           {/* Main column */}
-          <div className="mx-auto w-full max-w-[720px] pb-20">
+          <div className="mx-auto w-full max-w-[720px] min-w-0 pb-20">
             {reportEmpty ? (
               <div className="p-10 text-center text-sm text-muted-foreground">
                 {isRtl ? "التقرير قيد التحضير." : "Report is being prepared."}
@@ -204,7 +204,7 @@ const ResearchArticleTemplate = ({
                       dir={isRtl ? "rtl" : "ltr"}
                       className="scroll-mt-24"
                     >
-                      <div className="mt-20 mb-6">
+                      <div className="mt-14 mb-5 sm:mt-20 sm:mb-6">
                         <div className="flex items-center gap-3">
                           <span className="font-mono text-xs font-medium tabular-nums text-primary">
                             {String(i + 1).padStart(2, "0")}
@@ -213,7 +213,7 @@ const ResearchArticleTemplate = ({
                         </div>
                         <h2
                           dir="auto"
-                          className="mt-3 font-display text-3xl font-semibold tracking-tight text-foreground sm:text-[40px] sm:leading-[1.15]"
+                          className="mt-3 break-words font-display text-2xl font-semibold tracking-tight text-foreground sm:text-[40px] sm:leading-[1.15]"
                         >
                           {s.heading}
                         </h2>
