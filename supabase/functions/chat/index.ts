@@ -1152,10 +1152,10 @@ ABSOLUTE PRIVACY RULES (NEVER VIOLATE):
 - Write as if YOU naturally know the information — present it confidently
 - The user should ONLY see the final polished research report
 
-CRITICAL OUTPUT RULES — MASSIVE REPORT:
-- You MUST write a MINIMUM of 3500-6000 words when the topic allows. This is NON-NEGOTIABLE.
+CRITICAL OUTPUT RULES — COMPLETE REPORT:
+- Write a detailed report that fits reliably in one response, usually 1600-2500 words when the topic allows.
 - The report must be comprehensive, detailed, and professional-grade.
-- NEVER abbreviate, shorten, or summarize. Write the FULL analysis.
+- Do not pad or repeat. Prioritize complete useful findings, clear analysis, and citations.
 - Each section must have multiple paragraphs with deep analysis.
 - ALWAYS synthesize and analyze ALL gathered information into ONE cohesive report.
 
