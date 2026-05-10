@@ -15,6 +15,7 @@ interface Conversation {
   id: string;
   title: string;
   updated_at: string;
+  mode?: string;
 }
 
 /* ── Mega-menu structure ── */
@@ -60,7 +61,8 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
       const memberConvIds = (memberRows || []).map((r: any) => r.conversation_id);
       let cq = supabase
         .from("conversations")
-        .select("id, title, updated_at");
+        .select("id, title, updated_at, mode")
+        .in("mode", ["chat", "research"]);
       if (memberConvIds.length > 0) {
         cq = cq.or(`user_id.eq.${user.id},id.in.(${memberConvIds.join(",")})`);
       } else {
@@ -117,7 +119,7 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
           { label: "New Chat", desc: "Start a fresh conversation", action: "new-chat" },
           ...recentChats.map((c) => ({
             label: c.title || "Untitled",
-            desc: new Date(c.updated_at).toLocaleDateString(),
+            desc: `${c.mode === "research" ? "Deep Research · " : ""}${new Date(c.updated_at).toLocaleDateString()}`,
             action: `chat:${c.id}`,
           })),
         ],
@@ -142,8 +144,11 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
       navigate("/chat");
     } else if (action.startsWith("chat:")) {
       const id = action.replace("chat:", "");
-      onSelectConversation?.(id);
-      navigate("/chat");
+      if (location.pathname === "/chat") {
+        onSelectConversation?.(id);
+      } else {
+        navigate("/chat", { state: { loadConversationId: id } });
+      }
     } else {
       navigate(action);
     }

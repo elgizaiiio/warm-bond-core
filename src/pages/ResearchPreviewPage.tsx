@@ -23,6 +23,9 @@ const ResearchPreviewPage = () => {
   const stateReport = (location.state as { reportData?: ReportData } | null)?.reportData ?? null;
 
   const cacheKey = id ? `research-preview:${id}` : "";
+  const openConversationInChat = (conversationId: string) => {
+    navigate("/chat", { replace: true, state: { loadConversationId: conversationId } });
+  };
 
   useEffect(() => {
     // 1) Hydrate from navigation state (first visit from chat).
@@ -61,6 +64,10 @@ const ResearchPreviewPage = () => {
       const uuidRe = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
       const uuidMatch = id.match(uuidRe);
       const conversationId = uuidMatch ? uuidMatch[0] : null;
+      if (conversationId && id === conversationId) {
+        openConversationInChat(conversationId);
+        return;
+      }
 
       // 1) Direct session_key match (URL id used as-is).
       let { data: row } = await supabase

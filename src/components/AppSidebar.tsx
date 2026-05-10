@@ -213,8 +213,8 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                     <div className="space-y-0.5">
                       {conversations.map((conv) => {
                         const isResearch = conv.mode === "research";
-                        const targetPath = isResearch ? `/research/preview/${conv.id}` : "/chat";
-                        const onCurrentPage = !isResearch && location.pathname === targetPath;
+                        const targetPath = "/chat";
+                        const onCurrentPage = location.pathname === targetPath;
                         return (
                           <button
                             key={conv.id}
@@ -222,8 +222,6 @@ const AppSidebar = ({ open, onClose, onNewChat, onSelectConversation, activeConv
                               onClose();
                               if (onCurrentPage) {
                                 onSelectConversation?.(conv.id);
-                              } else if (isResearch) {
-                                navigate(targetPath);
                               } else {
                                 navigate(targetPath, { state: { loadConversationId: conv.id } });
                               }
