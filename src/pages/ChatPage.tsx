@@ -310,6 +310,9 @@ const ChatPage = () => {
     setPendingQuestions([]);
     setNarrations([]);
     setClarifyQs(null);
+    if (chatMode === "deep-research") {
+      setNarrations([buildInitialResearchNarration(userInput)]);
+    }
     setLoadingMessages(true);
     setMessages([]);
     setSystemEvents([]);
@@ -2192,7 +2195,7 @@ Ask me anything to get started!`;
                 );
               })}
               {/* Sticky in-chat focus timers — float above messages while scrolling */}
-              {studyTimers.length > 0 && (
+              {chatMode === "learning" && studyTimers.length > 0 && (
                 <div className="sticky top-16 z-30 flex flex-col gap-2 pointer-events-none">
                   <AnimatePresence>
                     {studyTimers.map((t) => (
