@@ -1099,6 +1099,7 @@ TEACHING RULES:
     const stream = new ReadableStream({
       async start(controller) {
         let buffer = "";
+        const sanitize = makeStreamSanitizer();
 
         while (true) {
           const { done, value } = await reader.read();
