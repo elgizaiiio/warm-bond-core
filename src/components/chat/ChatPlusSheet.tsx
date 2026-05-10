@@ -1,5 +1,5 @@
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
-import { Image as ImageIcon, Video, Mic, Code2, FileText, Search, Camera, FileUp, Globe, Sparkles, ChevronRight } from "lucide-react";
+import { Image as ImageIcon, Video, Mic, Code2, FileText, Camera, FileUp, Globe, Sparkles, ChevronRight } from "lucide-react";
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -125,7 +125,7 @@ export default function ChatPlusSheet({
               <Tile icon={<Mic className="w-[22px] h-[22px]" />} label="Voice" accent="text-purple-400" onClick={() => go("/voice")} />
               <Tile icon={<Code2 className="w-[22px] h-[22px]" />} label="Code" accent="text-blue-400" onClick={() => go("/code")} />
               <Tile icon={<FileText className="w-[22px] h-[22px]" />} label="Files" accent="text-orange-400" onClick={() => go("/files")} />
-              <Tile icon={<Search className="w-[22px] h-[22px]" />} label="Research" accent="text-violet-400" onClick={() => go("/research")} />
+              
               <Tile icon={<Camera className="w-[22px] h-[22px]" />} label="Camera" onClick={() => { onCamera(); onClose(); }} />
               <Tile icon={<FileUp className="w-[22px] h-[22px]" />} label="Upload" onClick={() => { onFiles(); onClose(); }} />
               <Tile icon={<Sparkles className="w-[22px] h-[22px]" />} label="Plus" accent="text-primary" onClick={() => go("/pricing")} />

@@ -21,7 +21,7 @@ const LearnModeToggle = ({ active, onToggle }: Props) => {
       title="Learn Mode"
     >
       <GraduationCap className="w-3.5 h-3.5" />
-      <span>تعلّم</span>
+      <span>Learn</span>
     </motion.button>
   );
 };

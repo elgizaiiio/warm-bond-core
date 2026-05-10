@@ -78,9 +78,6 @@ const VoiceStudioPage = lazy(() => import("./pages/voice/VoiceStudioPage"));
 const VideoToTextPage = lazy(() => import("./pages/tools/VideoToTextPage"));
 const AIPersonalizationPage = lazy(() => import("./pages/AIPersonalizationPage"));
 const MemoryPage = lazy(() => import("./pages/MemoryPage"));
-const LearningModePage = lazy(() => import("./pages/LearningModePage"));
-const ShoppingModePage = lazy(() => import("./pages/ShoppingModePage"));
-const DeepResearchPage = lazy(() => import("./pages/DeepResearchPage"));
 const ResearchPreviewPage = lazy(() => import("./pages/ResearchPreviewPage"));
 const InpaintPage = lazy(() => import("./pages/tools/InpaintPage"));
 const ClothesChangerPage = lazy(() => import("./pages/tools/ClothesChangerPage"));
@@ -117,10 +114,6 @@ const KaraokeSeparatorPage = lazy(() => import("./pages/voice/KaraokeSeparatorPa
 const PodcastEditorPage = lazy(() => import("./pages/voice/PodcastEditorPage"));
 const AudioRestorationPage = lazy(() => import("./pages/voice/AudioRestorationPage"));
 const AudioTranscriptionPage = lazy(() => import("./pages/voice/AudioTranscriptionPage"));
-const SmartNotesPage = lazy(() => import("./pages/tools/SmartNotesPage"));
-const ExamSimulatorPage = lazy(() => import("./pages/tools/ExamSimulatorPage"));
-const StudyPlannerPage = lazy(() => import("./pages/tools/StudyPlannerPage"));
-const FocusRoomPage = lazy(() => import("./pages/tools/FocusRoomPage"));
 const SkillsSettingsPage = lazy(() => import("./pages/SkillsSettingsPage"));
 const SkillsNewPage = lazy(() => import("./pages/SkillsNewPage"));
 
@@ -283,13 +276,7 @@ const App = () => {
                   <Route path="/voice/podcast-editor" element={<ProtectedRoute><PodcastEditorPage /></ProtectedRoute>} />
                   <Route path="/voice/audio-restoration" element={<ProtectedRoute><AudioRestorationPage /></ProtectedRoute>} />
                   <Route path="/voice/transcription" element={<ProtectedRoute><AudioTranscriptionPage /></ProtectedRoute>} />
-                  <Route path="/tools/smart-notes" element={<ProtectedRoute><SmartNotesPage /></ProtectedRoute>} />
-                  <Route path="/tools/exam-simulator" element={<ProtectedRoute><ExamSimulatorPage /></ProtectedRoute>} />
-                  <Route path="/tools/study-planner" element={<ProtectedRoute><StudyPlannerPage /></ProtectedRoute>} />
-                  <Route path="/tools/focus-room" element={<ProtectedRoute><FocusRoomPage /></ProtectedRoute>} />
-                  <Route path="/learning" element={<ProtectedRoute><LearningModePage /></ProtectedRoute>} />
-                  <Route path="/shopping" element={<ProtectedRoute><ShoppingModePage /></ProtectedRoute>} />
-                  <Route path="/research" element={<ProtectedRoute><DeepResearchPage /></ProtectedRoute>} />
+                  {/* Old learning/shopping/research standalone pages removed — modes live inside /chat now */}
                   <Route path="/research/preview/:id" element={<ProtectedRoute><ResearchPreviewPage /></ProtectedRoute>} />
                   <Route path="/code" element={<ProtectedRoute><ProgrammingPage key={currentUserId} /></ProtectedRoute>} />
                   <Route path="/code/workspace" element={<ProtectedRoute><CodeWorkspace key={currentUserId} /></ProtectedRoute>} />

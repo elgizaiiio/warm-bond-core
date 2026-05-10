@@ -1796,7 +1796,7 @@ Ask me anything to get started!`;
           currentMode="chat" />
 
         {/* Header */}
-        <div className="sticky top-0 z-20 flex items-center gap-2 px-4 py-2.5 min-h-[56px] bg-background/60 backdrop-blur-xl">
+        <div className="absolute top-0 inset-x-0 z-20 flex items-center gap-2 px-4 py-2.5 min-h-[56px] pointer-events-none [&>*]:pointer-events-auto">
           <button onClick={() => setSidebarOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-full text-foreground/85 hover:bg-accent/40 transition-colors" aria-label="Open menu">
             <Menu className="w-[20px] h-[20px]" />
           </button>
@@ -2085,36 +2085,7 @@ Ask me anything to get started!`;
                 )}
               </AnimatePresence>
 
-              {/* Learning quick-tools row — visible when Learning mode is active */}
-              <AnimatePresence>
-                {chatMode === "learning" && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    transition={{ type: "spring", stiffness: 360, damping: 24 }}
-                    className="flex gap-2 px-1 overflow-x-auto pb-1 scrollbar-thin"
-                  >
-                    {[
-                      { to: "/tools/exam-simulator", label: "Exams", Icon: ClipboardList, color: "text-rose-400", bg: "bg-rose-500/10" },
-                      { to: "/tools/focus-room", label: "Focus", Icon: Timer, color: "text-blue-400", bg: "bg-blue-500/10" },
-                      { to: "/tools/smart-notes", label: "Notes", Icon: NotebookPen, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-                      { to: "/tools/study-planner", label: "Planner", Icon: CalendarDays, color: "text-amber-400", bg: "bg-amber-500/10" },
-                    ].map(({ to, label, Icon, color, bg }) => (
-                      <motion.button
-                        key={to}
-                        whileTap={{ scale: 0.94 }}
-                        transition={{ type: "spring", stiffness: 380, damping: 22 }}
-                        onClick={() => navigate(to)}
-                        className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/50 ${bg} hover:border-border transition-colors ${color}`}
-                      >
-                        <Icon className="w-3.5 h-3.5" strokeWidth={2} />
-                        <span className="text-[12px] font-semibold text-foreground/90">{label}</span>
-                      </motion.button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* Learning quick-tools row removed — everything happens inside chat */}
 
               {/* Mode chips removed per request */}
 
