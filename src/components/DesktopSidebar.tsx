@@ -144,8 +144,11 @@ const DesktopSidebar = ({ onSelectConversation, onNewChat, activeConversationId 
       navigate("/chat");
     } else if (action.startsWith("chat:")) {
       const id = action.replace("chat:", "");
-      onSelectConversation?.(id);
-      navigate("/chat");
+      if (location.pathname === "/chat") {
+        onSelectConversation?.(id);
+      } else {
+        navigate("/chat", { state: { loadConversationId: id } });
+      }
     } else {
       navigate(action);
     }
