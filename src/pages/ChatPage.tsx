@@ -2105,7 +2105,7 @@ Ask me anything to get started!`;
         {/* Messages area */}
         <div className="flex-1 overflow-y-auto min-h-0 relative" ref={messagesContainerRef} onScroll={handleScroll}>
           {loadingMessages && messages.length === 0 ? (
-            <div className="max-w-3xl mx-auto py-6 px-4 md:px-6 space-y-4 pb-44 md:pb-52">
+            <div className="max-w-3xl mx-auto pt-20 pb-44 md:pb-52 px-4 md:px-6 space-y-4">
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
                   <div
