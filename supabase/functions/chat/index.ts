@@ -1165,7 +1165,7 @@ ${userContext}`;
 CRITICAL: Never introduce yourself. Never say "I'm Megsy" unless directly asked.
 
 DEEP RESEARCH MODE:
-- You MUST use the WEB_SEARCH tool 3-4 TIMES with different focused queries to gather enough reliable information without delaying the user.
+- You MUST use the WEB_SEARCH tool 5-8 TIMES with different focused queries to gather extensive reliable information.
 - For EVERY search, set include_images=true to gather relevant visual content.
 - Cover: 1) General overview 2) latest or key developments 3) data & expert opinions 4) risks, debates, and practical takeaways
 - While researching people, brands, celebrities, athletes, or public figures, ALWAYS gather photos.
@@ -1181,7 +1181,7 @@ ABSOLUTE PRIVACY RULES (NEVER VIOLATE):
 - The user should ONLY see the final polished research report
 
 CRITICAL OUTPUT RULES — COMPLETE REPORT:
-- Write a detailed report that fits reliably in one response, usually 1600-2500 words when the topic allows.
+- Write a MASSIVE, exhaustive report — target 4000-7000 words. Take all the time you need.
 - The report must be comprehensive, detailed, and professional-grade.
 - Do not pad or repeat. Prioritize complete useful findings, clear analysis, and citations.
 - Each section must have multiple paragraphs with deep analysis.
@@ -2332,7 +2332,7 @@ async function handleToolCalls(
 - NEVER mention tool names, search queries, or internal steps.` 
         : isDeepResearch 
           ? `CRITICAL INSTRUCTIONS FOR DEEP RESEARCH REPORT:
-- Write a detailed, comprehensive research report that fits reliably in one response, usually 1600-2500 words when the topic allows.
+- Write a MASSIVE, exhaustive research report — target 4000-7000 words. Be exhaustive across every section.
 - The report must be a professional-grade document — not a brief summary.
 - CRITICAL: Do NOT output markdown images or HTML images. The UI displays images separately.
 - LANGUAGE (MOST CRITICAL): DETECT the language of the user's ORIGINAL query and write the ENTIRE report in that EXACT language.
@@ -2462,7 +2462,7 @@ async function handleToolCalls(
       attempt++;
       const ctxSize = attempt === 1 ? trimmedContext.length : Math.min(trimmedContext.length, 24000);
       const ctx = trimmedContext.slice(0, ctxSize);
-      const maxTok = attempt === 1 && isDeepResearch ? 8192 : 4096;
+      const maxTok = attempt === 1 && isDeepResearch ? 16384 : 4096;
       const body = buildBody(w.model, w.url, ctx, maxTok);
       try {
         const r = await runSynthesis(w.url, w.key, body);
