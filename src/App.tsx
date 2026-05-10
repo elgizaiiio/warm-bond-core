@@ -14,6 +14,7 @@ import TranslationWrapper from "./components/TranslationWrapper";
 import AuthPage from "./pages/AuthPage";
 import OAuthCallbackPage from "./pages/OAuthCallbackPage";
 import ChatPage from "./pages/ChatPage";
+import ChatSettingsPage from "./pages/ChatSettingsPage";
 import LandingPage from "./pages/LandingPage";
 
 // Lazy-loaded pages
@@ -223,6 +224,7 @@ const App = () => {
                   <Route path="/share/:shareId" element={<SharedChatPage />} />
                   <Route path="/invite/:token" element={<AcceptInvitePage />} />
                   <Route path="/chat" element={<ProtectedRoute><ChatPage key={currentUserId} /></ProtectedRoute>} />
+                  <Route path="/chat/settings" element={<ProtectedRoute><ChatSettingsPage /></ProtectedRoute>} />
                   <Route path="/images" element={<ProtectedRoute><ImagesPage key={currentUserId} /></ProtectedRoute>} />
                   <Route path="/images/studio" element={<ProtectedRoute><ImageStudioPage key={currentUserId} /></ProtectedRoute>} />
                   <Route path="/images/agent" element={<ProtectedRoute><ImageAgentPage key={currentUserId} /></ProtectedRoute>} />
