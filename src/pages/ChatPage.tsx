@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Highlighter } from "@/components/magicui/highlighter";
 import UnlockProButton from "@/components/UnlockProButton";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, ChevronLeft, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2, NotebookPen, ClipboardList, CalendarDays, Timer, Wrench, Lightbulb, Mic2, Sparkles, BookOpen, Check, Cpu, Bot, Atom } from "lucide-react";
+import { Menu, Plus, Camera, Image, FileUp, X, GraduationCap, ShoppingCart, ArrowDown, ChevronDown, ChevronLeft, Star, Pencil, Trash2, FolderPlus, Globe, Lock, Share2, MoreVertical, Pin, UserPlus, Copy, Mail, Link2, Users, Loader2, NotebookPen, ClipboardList, CalendarDays, Timer, Wrench, Lightbulb, Mic2, Sparkles, BookOpen, Check, Cpu, Bot, Atom, Music2, Layers, ClipboardCheck, Volume2, Play } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,7 @@ import { useSkills } from "@/hooks/useSkills";
 
 import DeepResearchToggle from "@/components/research/DeepResearchToggle";
 import LearnModeToggle from "@/components/learn/LearnModeToggle";
+import InChatTimerCard from "@/components/learn/InChatTimerCard";
 import AnimatedHeadline from "@/components/research/AnimatedHeadline";
 import ClarifyDialog, { type ClarifyQuestion } from "@/components/research/ClarifyDialog";
 import type { ResearchTask } from "@/components/research/ResearchTaskTimeline";
@@ -196,7 +197,12 @@ const ChatPage = () => {
   const [selectedModel, setSelectedModel] = useState<AgentModel | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<AgentDef | null>(null);
   const [userName, setUserName] = useState<string>("");
-  const [plusView, setPlusView] = useState<"main" | "tools" | "models" | "skills">("main");
+  const [plusView, setPlusView] = useState<"main" | "tools" | "models" | "skills" | "music" | "timer">("main");
+  const [studyMusic, setStudyMusic] = useState<{ kind: string | null }>({ kind: null });
+  const [readAloud, setReadAloud] = useState(false);
+  const [studyTimers, setStudyTimers] = useState<Array<{ id: string; totalSec: number; startedAt: number; paused: boolean; pausedRemaining: number | null }>>([]);
+  const [timerInputMin, setTimerInputMin] = useState<number>(25);
+  const studyAudioRef = useRef<HTMLAudioElement | null>(null);
   const [userIntegrations, setUserIntegrations] = useState<string[]>([]);
 
   const upsertResearchTask = useCallback((task: ResearchTask) => {
@@ -1514,6 +1520,81 @@ Ask me anything to get started!`;
                 ))}
               </div>
 
+              {chatMode === "learning" ? (
+                <>
+                  {/* Play music */}
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    transition={iosSpring}
+                    onClick={() => setPlusView("music")}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl liquid-glass-hover transition-colors text-left"
+                  >
+                    <Music2 className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
+                    <span className="flex-1 text-[13.5px] text-foreground/85">Play music</span>
+                    <span className="text-[12px] font-medium text-foreground/70 truncate max-w-[8rem]">
+                      {studyMusic.kind || "Off"}
+                    </span>
+                    <ChevronDown className="w-4 h-4 -rotate-90 text-muted-foreground" />
+                  </motion.button>
+
+                  {/* Focus timer */}
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    transition={iosSpring}
+                    onClick={() => setPlusView("timer")}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl liquid-glass-hover transition-colors text-left"
+                  >
+                    <Timer className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
+                    <span className="flex-1 text-[13.5px] text-foreground/85">Focus timer</span>
+                    <ChevronDown className="w-4 h-4 -rotate-90 text-muted-foreground" />
+                  </motion.button>
+
+                  {/* Flashcards */}
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    transition={iosSpring}
+                    onClick={() => { setPlusMenuOpen(false); handleSendWithText("Generate 5 concise flashcards (front/back) from our current conversation."); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl liquid-glass-hover transition-colors text-left"
+                  >
+                    <Layers className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
+                    <span className="flex-1 text-[13.5px] text-foreground/85">Flashcards</span>
+                  </motion.button>
+
+                  {/* Quick quiz */}
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    transition={iosSpring}
+                    onClick={() => { setPlusMenuOpen(false); handleSendWithText("Give me a 5-question quiz on what we just discussed. Wait for my answers, then grade them."); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl liquid-glass-hover transition-colors text-left"
+                  >
+                    <ClipboardCheck className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
+                    <span className="flex-1 text-[13.5px] text-foreground/85">Quick quiz</span>
+                  </motion.button>
+
+                  {/* Read aloud toggle */}
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    transition={iosSpring}
+                    onClick={() => setReadAloud((v) => !v)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl liquid-glass-hover transition-colors text-left"
+                  >
+                    <Volume2 className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
+                    <span className="flex-1 text-[13.5px] text-foreground/85">Read aloud</span>
+                    <div
+                      className="relative shrink-0 rounded-full transition-colors duration-200 ease-out"
+                      style={{ width: 40, height: 24, backgroundColor: readAloud ? "#059669" : "#e9e9eb" }}
+                    >
+                      <motion.div
+                        layout
+                        transition={iosSpring}
+                        className="absolute top-1/2 rounded-full bg-white"
+                        style={{ width: 20, height: 20, marginTop: -10, left: readAloud ? 18 : 2, boxShadow: "0px 3px 8px rgba(0,0,0,0.15)" }}
+                      />
+                    </div>
+                  </motion.button>
+                </>
+              ) : (
+                <>
               {/* Web search row */}
               <motion.button
                 whileTap={{ scale: 0.97 }}
@@ -1591,6 +1672,8 @@ Ask me anything to get started!`;
                 </span>
                 <ChevronDown className="w-4 h-4 -rotate-90 text-muted-foreground" />
               </motion.button>
+                </>
+              )}
             </motion.div>
           ) : plusView === "models" ? (
             <motion.div
@@ -1738,6 +1821,111 @@ Ask me anything to get started!`;
                     {skill.description && <div className="text-[11px] text-muted-foreground leading-tight truncate">{skill.description}</div>}
                   </div>
                 ))}
+              </div>
+            </motion.div>
+          ) : plusView === "music" ? (
+            <motion.div
+              key="music"
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.18 }}
+              className="flex flex-col"
+            >
+              <div className="flex items-center gap-1 px-1.5 pt-1 pb-2">
+                <motion.button whileTap={{ scale: 0.92 }} onClick={() => setPlusView("main")} className="w-7 h-7 flex items-center justify-center rounded-full liquid-glass-hover" aria-label="Back">
+                  <ChevronLeft className="w-4 h-4 text-foreground/80" />
+                </motion.button>
+                <span className="text-[13px] font-semibold text-foreground/85">Study music</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                {[
+                  { id: "Lo-fi", url: "https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3" },
+                  { id: "Classical", url: "https://cdn.pixabay.com/audio/2022/10/25/audio_92215f17a4.mp3" },
+                  { id: "Nature sounds", url: "https://cdn.pixabay.com/audio/2022/03/15/audio_e1ada46b94.mp3" },
+                  { id: "Focus beats", url: "https://cdn.pixabay.com/audio/2023/06/02/audio_5d4cb33a1d.mp3" },
+                  { id: "White noise", url: "https://cdn.pixabay.com/audio/2022/03/24/audio_e87a37a40b.mp3" },
+                  { id: "Off", url: "" },
+                ].map((opt) => {
+                  const active = (studyMusic.kind || "Off") === opt.id;
+                  return (
+                    <motion.button
+                      key={opt.id}
+                      whileTap={{ scale: 0.98 }}
+                      transition={iosSpring}
+                      onClick={() => {
+                        if (opt.id === "Off") {
+                          setStudyMusic({ kind: null });
+                          if (studyAudioRef.current) { studyAudioRef.current.pause(); studyAudioRef.current.src = ""; }
+                        } else {
+                          setStudyMusic({ kind: opt.id });
+                          if (!studyAudioRef.current) studyAudioRef.current = new Audio();
+                          studyAudioRef.current.loop = true;
+                          studyAudioRef.current.src = opt.url;
+                          studyAudioRef.current.volume = 0.5;
+                          studyAudioRef.current.play().catch(() => toast.info(`Selected ${opt.id} (audio blocked by browser)`));
+                        }
+                        setPlusView("main");
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left transition-colors ${active ? "bg-emerald-500/10 border border-emerald-500/30" : "liquid-glass-hover border border-transparent"}`}
+                    >
+                      <Music2 className="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" strokeWidth={1.75} />
+                      <span className="flex-1 text-[13.5px] text-foreground/90">{opt.id}</span>
+                      {active && <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          ) : plusView === "timer" ? (
+            <motion.div
+              key="timer"
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.18 }}
+              className="flex flex-col"
+            >
+              <div className="flex items-center gap-1 px-1.5 pt-1 pb-2">
+                <motion.button whileTap={{ scale: 0.92 }} onClick={() => setPlusView("main")} className="w-7 h-7 flex items-center justify-center rounded-full liquid-glass-hover" aria-label="Back">
+                  <ChevronLeft className="w-4 h-4 text-foreground/80" />
+                </motion.button>
+                <span className="text-[13px] font-semibold text-foreground/85">Focus timer</span>
+              </div>
+              <div className="px-2 pb-1">
+                <div className="grid grid-cols-4 gap-1.5 mb-2">
+                  {[15, 25, 45, 60].map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setTimerInputMin(m)}
+                      className={`py-2 rounded-xl text-[12.5px] font-semibold transition-colors ${timerInputMin === m ? "bg-emerald-600 text-white" : "liquid-glass-hover text-foreground/85"}`}
+                    >
+                      {m}m
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={180}
+                    value={timerInputMin}
+                    onChange={(e) => setTimerInputMin(Math.max(1, Math.min(180, parseInt(e.target.value || "0") || 1)))}
+                    className="flex-1 bg-transparent border border-border/40 rounded-xl px-3 py-2 text-[13px] text-foreground outline-none focus:border-emerald-500/60"
+                  />
+                  <span className="text-[12px] text-muted-foreground">minutes</span>
+                </div>
+                <button
+                  onClick={() => {
+                    const id = `timer-${Date.now()}`;
+                    setStudyTimers((prev) => [...prev, { id, totalSec: timerInputMin * 60, startedAt: Date.now(), paused: false, pausedRemaining: null }]);
+                    setPlusMenuOpen(false);
+                    setTimeout(() => scrollToBottom(), 100);
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white text-[13px] font-semibold hover:bg-emerald-500 transition-colors"
+                >
+                  <Play className="w-4 h-4" fill="currentColor" /> Start session
+                </button>
               </div>
             </motion.div>
           ) : (
@@ -1980,6 +2168,30 @@ Ask me anything to get started!`;
                 </motion.div>
                 );
               })}
+              {/* In-chat focus timers */}
+              <AnimatePresence>
+                {studyTimers.map((t) => (
+                  <InChatTimerCard
+                    key={t.id}
+                    id={t.id}
+                    totalSec={t.totalSec}
+                    startedAt={t.startedAt}
+                    paused={t.paused}
+                    pausedRemaining={t.pausedRemaining}
+                    onPauseToggle={(id) => setStudyTimers((prev) => prev.map((x) => {
+                      if (x.id !== id) return x;
+                      if (x.paused) {
+                        const remaining = x.pausedRemaining ?? x.totalSec;
+                        return { ...x, paused: false, startedAt: Date.now() - (x.totalSec - remaining) * 1000, pausedRemaining: null };
+                      }
+                      const remaining = Math.max(0, x.totalSec - Math.floor((Date.now() - x.startedAt) / 1000));
+                      return { ...x, paused: true, pausedRemaining: remaining };
+                    }))}
+                    onCancel={(id) => setStudyTimers((prev) => prev.filter((x) => x.id !== id))}
+                  />
+                ))}
+              </AnimatePresence>
+
               {/* System events (join/leave) */}
               <AnimatePresence>
                 {systemEvents.slice(-3).map((ev) => (
@@ -2235,6 +2447,7 @@ Ask me anything to get started!`;
                   selectedModel={selectedModel}
                   onModelSelect={(model: AgentModel) => setSelectedModel(model)}
                   onModelRemove={() => setSelectedModel(null)}
+                  accentMode={chatMode === "learning" ? "learn" : null}
                 />
               </div>
             </div>

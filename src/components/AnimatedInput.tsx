@@ -31,6 +31,7 @@ interface AnimatedInputProps {
   selectedModel?: AgentModel | null;
   onModelSelect?: (model: AgentModel) => void;
   onModelRemove?: () => void;
+  accentMode?: "learn" | null;
 }
 
 const DEFAULT_PLACEHOLDERS = [
@@ -39,7 +40,7 @@ const DEFAULT_PLACEHOLDERS = [
   "Ask anything...",
 ];
 
-const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading, placeholders, pendingQuestions, onQuestionAnswer, onQuestionSkip, activeAgent, onAgentSelect, onAgentRemove, mentionCategories, selectedModel, onModelSelect, onModelRemove }: AnimatedInputProps) => {
+const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disabled, isLoading, placeholders, pendingQuestions, onQuestionAnswer, onQuestionSkip, activeAgent, onAgentSelect, onAgentRemove, mentionCategories, selectedModel, onModelSelect, onModelRemove, accentMode }: AnimatedInputProps) => {
   const deferredValue = useDeferredValue(value);
   const items = useMemo(() => placeholders && placeholders.length > 0 ? placeholders : DEFAULT_PLACEHOLDERS, [placeholders]);
   const [placeholderIndex, setPlaceholderIndex] = useState(() => Math.floor(Math.random() * items.length));
@@ -299,7 +300,11 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
             transition={{ type: "spring", stiffness: 400, damping: 22 }}
             type="button"
             onClick={onPlusClick}
-            className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full text-foreground/85 hover:text-foreground hover:bg-accent/40 transition-colors"
+            className={`shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-colors ${
+              accentMode === "learn"
+                ? "bg-emerald-600 text-white hover:bg-emerald-500 shadow-[0_6px_20px_-6px_rgba(5,150,105,0.6)]"
+                : "text-foreground/85 hover:text-foreground hover:bg-accent/40"
+            }`}
             aria-label="Open attachments"
           >
             <Plus className="w-[22px] h-[22px]" strokeWidth={2} />
