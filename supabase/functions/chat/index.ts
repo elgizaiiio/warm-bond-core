@@ -1147,7 +1147,10 @@ TEACHING RULES:
               }
 
               if (delta.content && !isToolMarkerChunk(delta.content)) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: delta.content } }] })}\n\n`));
+                const cleaned = sanitize(delta.content);
+                if (cleaned) {
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: cleaned } }] })}\n\n`));
+                }
               }
             } catch {
               // Skip malformed JSON
