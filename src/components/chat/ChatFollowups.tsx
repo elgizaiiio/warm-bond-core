@@ -47,25 +47,5 @@ export function ChatFollowups({ userMessage, assistantReply, conversationId, mes
     return () => { cancelled = true; };
   }, [assistantReply, userMessage, conversationId, messageId]);
 
-  if (loading || questions.length === 0) return null;
-
-  return (
-    <div className="mt-3 flex flex-col gap-2 max-w-full">
-      <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-        <Sparkles className="w-3 h-3" />
-        <span>اقتراحات</span>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {questions.map((q, i) => (
-          <button
-            key={i}
-            onClick={() => onPick(q)}
-            className="px-3 py-1.5 text-xs rounded-full border border-border hover:bg-accent text-foreground/80 hover:text-foreground transition-colors text-right"
-          >
-            {q}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+  return null;
 }
