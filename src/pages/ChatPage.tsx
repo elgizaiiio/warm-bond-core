@@ -89,13 +89,37 @@ const PegtopIcon = ({ className }: {className?: string;}) =>
 
 const MEGSY_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
 
-const sanitizeLeakedToolText = (value: string) => String(value || "")
+const stripLeakedToolText = (value: string) => String(value || "")
   .replace(/```(?:tool_code|tool_call|function_call|python)?[\s\S]*?(?:default_api|tool_code|tool_call|function_call)[\s\S]*?(?:```|$)/gi, "")
   .replace(/<tool_call[\s\S]*?(?:<\/tool_call>|$)/gi, "")
   .replace(/<function_call[\s\S]*?(?:<\/function_call>|$)/gi, "")
   .replace(/\$\{tool_code\}\s*/gi, "")
-  .replace(/(?:^|\n)[^\n]*(?:print\s*\(\s*)?default_api\.[^\n]*(?:\n|$)/gi, "\n")
-  .trim();
+  .replace(/(?:^|\n)[^\n]*(?:print\s*\(\s*)?default_api\.[^\n]*(?:\n|$)/gi, "\n");
+
+const sanitizeLeakedToolText = (value: string) => stripLeakedToolText(value).trim();
+
+const makeLeakedToolStreamSanitizer = () => {
+  let buffer = "";
+  const markers = ["${tool_code}", "print(default_api.", "default_api.", "<tool_call", "<function_call", "```tool_code", "```tool_call", "```function_call", "```python"];
+  return (chunk: string, force = false) => {
+    buffer += chunk;
+    const lower = buffer.toLowerCase();
+    if (!force) {
+      const max = Math.min(80, buffer.length);
+      for (let len = max; len > 0; len--) {
+        const suffix = lower.slice(-len);
+        if (markers.some((marker) => marker.startsWith(suffix))) {
+          const safe = buffer.slice(0, -len);
+          buffer = buffer.slice(-len);
+          return stripLeakedToolText(safe);
+        }
+      }
+    }
+    const safe = buffer;
+    buffer = "";
+    return stripLeakedToolText(safe);
+  };
+};
 
 const normalizeStatusLabel = (status: string) => {
   if (!status.trim()) return "";
