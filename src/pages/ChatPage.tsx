@@ -89,6 +89,14 @@ const PegtopIcon = ({ className }: {className?: string;}) =>
 
 const MEGSY_MODEL = "google/gemini-2.5-flash-lite-preview-09-2025";
 
+const sanitizeLeakedToolText = (value: string) => String(value || "")
+  .replace(/```(?:tool_code|tool_call|function_call|python)?[\s\S]*?(?:default_api|tool_code|tool_call|function_call)[\s\S]*?(?:```|$)/gi, "")
+  .replace(/<tool_call[\s\S]*?(?:<\/tool_call>|$)/gi, "")
+  .replace(/<function_call[\s\S]*?(?:<\/function_call>|$)/gi, "")
+  .replace(/\$\{tool_code\}\s*/gi, "")
+  .replace(/(?:^|\n)[^\n]*(?:print\s*\(\s*)?default_api\.[^\n]*(?:\n|$)/gi, "\n")
+  .trim();
+
 const normalizeStatusLabel = (status: string) => {
   if (!status.trim()) return "";
   const lower = status.toLowerCase();
