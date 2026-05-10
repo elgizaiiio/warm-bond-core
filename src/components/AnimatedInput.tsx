@@ -234,7 +234,17 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           />
         )}
       </AnimatePresence>
-      <div className="rounded-xl liquid-glass overflow-hidden shadow-[0_8px_32px_-12px_rgba(0,0,0,0.18)]">
+      <div
+        className="rounded-xl overflow-hidden border border-white/15 dark:border-white/10 shadow-[0_12px_48px_-16px_rgba(0,0,0,0.35)]"
+        style={{
+          background:
+            "linear-gradient(135deg, hsl(var(--background) / 0.45), hsl(var(--background) / 0.25))",
+          backdropFilter: "blur(28px) saturate(1.8)",
+          WebkitBackdropFilter: "blur(28px) saturate(1.8)",
+          boxShadow:
+            "inset 0 1px 0 0 hsl(0 0% 100% / 0.18), inset 0 -1px 0 0 hsl(0 0% 0% / 0.06), 0 16px 48px -12px hsl(0 0% 0% / 0.25)",
+        }}
+      >
         <AnimatePresence>
           {hasQuestions && currentQuestion && (
             <motion.div
