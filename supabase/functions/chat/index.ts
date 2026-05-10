@@ -395,6 +395,18 @@ function makeStreamSanitizer() {
   };
 }
 
+function sanitizeAssistantHistoryMessage(message: any) {
+  if (!message || message.role !== "assistant" || typeof message.content !== "string") return message;
+  const cleaned = message.content
+    .replace(/```(?:tool_code|tool_call|function_call|python)?[\s\S]*?(?:default_api|tool_code|tool_call|function_call)[\s\S]*?(?:```|$)/gi, "")
+    .replace(/<tool_call[\s\S]*?(?:<\/tool_call>|$)/gi, "")
+    .replace(/<function_call[\s\S]*?(?:<\/function_call>|$)/gi, "")
+    .replace(/\$\{tool_code\}\s*/gi, "")
+    .replace(/(?:^|\n)[^\n]*(?:print\s*\(\s*)?default_api\.[^\n]*(?:\n|$)/gi, "\n")
+    .trim();
+  return { ...message, content: cleaned };
+}
+
 function normalizeRequestedModel(rawModel: string | null): string | null {
   if (!rawModel || rawModel === "auto") return null;
   return rawModel;
