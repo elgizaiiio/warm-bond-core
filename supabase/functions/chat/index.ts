@@ -1471,13 +1471,7 @@ async function handleToolCalls(
   // ── REAL AI-generated, streaming narration. Each milestone calls Gemini Flash Lite
   // and streams tokens to the client so the user sees the AI literally typing what it's doing,
   // in their exact language and dialect. No templates.
-  const narrationLangHint = isArabic
-    ? "Reply in casual Egyptian Arabic dialect (مصري دارج), one short sentence."
-    : isFrench
-      ? "Réponds en français familier, une seule courte phrase."
-      : isSpanish
-        ? "Responde en español coloquial, una sola frase corta."
-        : "Reply in casual conversational English, one short sentence.";
+  const narrationLangHint = "CRITICAL: Detect the EXACT language AND dialect/register the user wrote in (e.g. Modern Standard Arabic vs Egyptian vs Levantine vs Gulf vs Maghrebi, European vs Latin American Spanish, Brazilian vs European Portuguese, Hindi vs Hinglish, formal vs casual English, etc.) and reply in THAT exact same language and dialect. Mirror their tone and vocabulary. One short natural sentence.";
 
   const aiNarrate = async (intent: string) => {
     if (!isDeepResearch) return;
