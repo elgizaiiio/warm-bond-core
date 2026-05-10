@@ -2423,6 +2423,7 @@ Ask me anything to get started!`;
                   selectedModel={selectedModel}
                   onModelSelect={(model: AgentModel) => setSelectedModel(model)}
                   onModelRemove={() => setSelectedModel(null)}
+                  accentMode={chatMode === "learning" ? "learn" : null}
                 />
               </div>
             </div>
