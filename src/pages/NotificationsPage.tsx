@@ -4,6 +4,7 @@ import { ArrowLeft, Bell, CreditCard, Settings, Sparkles, Users, CheckCheck } fr
 import { useNotifications, type Notification } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
 import AppLayout from "@/layouts/AppLayout";
+import { goBackOr } from "@/lib/navigation";
 
 const typeConfig: Record<string, { icon: typeof Bell; className: string; label: string }> = {
   credits: { icon: CreditCard, className: "text-yellow-500", label: "Credits" },
@@ -62,7 +63,7 @@ const NotificationsPage = () => {
       <div className="h-full overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 py-6">
           <div className="flex items-center gap-3 mb-6">
-            <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-muted transition-colors">
+            <button onClick={() => goBackOr(navigate, "/chat")} className="p-2 rounded-lg hover:bg-muted transition-colors">
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <div className="flex-1">

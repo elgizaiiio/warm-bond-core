@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowUp } from "lucide-react";
 import MegsyStar from "@/components/files/MegsyStar";
+import { goBackOr } from "@/lib/navigation";
 
 const SUGGESTIONS = [
   "A YC pitch coach",
@@ -39,7 +40,7 @@ export default function SkillsNewPage() {
       <header className="sticky top-0 z-20 bg-background/85 backdrop-blur-xl border-b border-border/30">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => goBackOr(navigate, "/settings/skills")}
             className="p-2 -ml-2 rounded-xl hover:bg-accent/60 transition-colors"
             aria-label="Back"
           >
