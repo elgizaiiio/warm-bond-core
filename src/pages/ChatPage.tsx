@@ -515,6 +515,7 @@ const ChatPage = () => {
     let assistantContent = "";
     let assistantRenderTimer: ReturnType<typeof setTimeout> | null = null;
     let hasStartedResponse = false;
+    let hadStreamError = false;
     const controller = new AbortController();
     abortControllerRef.current = controller;
     let searchImages: string[] = [];
@@ -704,6 +705,7 @@ const ChatPage = () => {
         }
       },
       onDone: async () => {
+        if (hadStreamError) return;
         if (assistantRenderTimer) {
           clearTimeout(assistantRenderTimer);
           flushAssistantUpdate();
@@ -757,6 +759,7 @@ const ChatPage = () => {
         }
       },
       onError: (err) => {
+        hadStreamError = true;
         if (assistantRenderTimer) clearTimeout(assistantRenderTimer);
         toast.error(err);setIsThinking(false);setIsLoading(false);setSearchStatus("");
         if (presenceChannelRef.current && chatUserId) {
