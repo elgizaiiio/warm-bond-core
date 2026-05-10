@@ -343,6 +343,7 @@ const ChatPage = () => {
         user_id: m.user_id,
         senderName: m.user_id ? senderMap[m.user_id]?.name : null,
         senderAvatar: m.user_id ? senderMap[m.user_id]?.avatar : null,
+        mode: m.role === "assistant" && (conv as any)?.mode === "research" ? "deep-research" : undefined,
       })));
       setTimeout(() => scrollToBottom(), 150);
     }
