@@ -2180,7 +2180,7 @@ Ask me anything to get started!`;
               })}
               {/* Sticky in-chat focus timers — float above messages while scrolling */}
               {studyTimers.length > 0 && (
-                <div className="sticky top-2 z-30 flex flex-col gap-2 pointer-events-none">
+                <div className="sticky top-16 z-30 flex flex-col gap-2 pointer-events-none">
                   <AnimatePresence>
                     {studyTimers.map((t) => (
                       <div key={t.id} className="pointer-events-auto">
