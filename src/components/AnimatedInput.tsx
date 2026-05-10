@@ -322,15 +322,30 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           </motion.button>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center min-h-[48px]">
+            <div className="relative flex items-center min-h-[48px]">
+              {!value && displayedPlaceholder && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 flex items-center px-1 py-2.5 text-[1rem] text-muted-foreground/60 leading-relaxed overflow-hidden"
+                >
+                  <TypingAnimation
+                    key={displayedPlaceholder}
+                    duration={55}
+                    showCursor={false}
+                    className="truncate"
+                  >
+                    {displayedPlaceholder}
+                  </TypingAnimation>
+                </div>
+              )}
               <textarea
                 ref={textareaRef}
                 value={value}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
-                placeholder={displayedPlaceholder || "Ask anything…"}
+                placeholder=""
                 rows={1}
-                className="flex-1 w-full min-w-0 bg-transparent border-none outline-none resize-none text-[1rem] text-foreground placeholder:text-muted-foreground/60 py-2.5 px-1 leading-relaxed"
+                className="relative flex-1 w-full min-w-0 bg-transparent border-none outline-none resize-none text-[1rem] text-foreground py-2.5 px-1 leading-relaxed"
                 style={{ minHeight: "48px" }}
               />
             </div>
