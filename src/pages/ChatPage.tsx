@@ -461,10 +461,7 @@ const ChatPage = () => {
     setAttachedFiles([]);
     setIsLoading(true);setIsThinking(true);
     setPendingQuestions([]);
-    setResearchPlan(null);
-    researchTasksRef.current = [];
-    setResearchTasks([]);
-    setResearchSummary(null);
+    setNarrations([]);
     setClarifyQs(null);
 
     const conversationPromise = createOrUpdateConversation(userInput || "File analysis").catch(() => null);
