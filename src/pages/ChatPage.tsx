@@ -441,6 +441,7 @@ const ChatPage = () => {
     const imageAttachments = attachedFiles.filter((f) => f.type === "image");
     const fileAttachments = attachedFiles.filter((f) => f.type === "file");
     const localTurnId = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+    const assistantMessageIndex = editingIndex !== null ? editingIndex + 1 : messages.length + 1;
 
     const userMsg: Message = {
       role: "user",
