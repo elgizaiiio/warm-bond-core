@@ -645,7 +645,7 @@ const ChatPage = () => {
     const updateAssistant = (chunk: string) => {
       if (isToolMarkerChunk(chunk)) return;
       const safeChunk = sanitizeStreamChunk(chunk);
-      if (!safeChunk) return;
+      if (!safeChunk.trim()) return;
       if (!hasStartedResponse) {
         hasStartedResponse = true;
         setIsThinking(false);
@@ -767,7 +767,7 @@ const ChatPage = () => {
       onDone: async () => {
         if (hadStreamError) return;
         const tail = sanitizeStreamChunk("", true);
-        if (tail) {
+        if (tail.trim()) {
           assistantContent += tail;
         }
         if (assistantRenderTimer) {
