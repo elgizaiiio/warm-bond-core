@@ -2672,6 +2672,11 @@ async function handleToolCalls(
           } catch { continue; }
         }
       }
+      const tail = sanitize("", true);
+      if (tail) {
+        streamed = true;
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: tail } }] })}\n\n`));
+      }
       return { ok: true, streamed };
     };
 
