@@ -257,6 +257,183 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_citations: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          id: string
+          index_num: number
+          message_id: string | null
+          snippet: string | null
+          source_type: string | null
+          title: string | null
+          url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          index_num: number
+          message_id?: string | null
+          snippet?: string | null
+          source_type?: string | null
+          title?: string | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          index_num?: number
+          message_id?: string | null
+          snippet?: string | null
+          source_type?: string | null
+          title?: string | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_citations_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_citations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_followups: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          id: string
+          message_id: string | null
+          questions: Json
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          questions?: Json
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          questions?: Json
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_followups_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_followups_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_router_logs: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          id: string
+          latency_ms: number | null
+          routed: Json
+          user_id: string | null
+          user_text: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          routed?: Json
+          user_id?: string | null
+          user_text?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          routed?: Json
+          user_id?: string | null
+          user_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_router_logs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_router_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_semantic_cache: {
+        Row: {
+          created_at: string
+          expires_at: string
+          hits: number
+          id: string
+          model: string | null
+          query_embedding: Json | null
+          query_hash: string
+          query_text: string
+          response: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          hits?: number
+          id?: string
+          model?: string | null
+          query_embedding?: Json | null
+          query_hash: string
+          query_text: string
+          response: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          hits?: number
+          id?: string
+          model?: string | null
+          query_embedding?: Json | null
+          query_hash?: string
+          query_text?: string
+          response?: string
+        }
+        Relationships: []
+      }
       code_integrations: {
         Row: {
           config: Json
@@ -2579,6 +2756,59 @@ export type Database = {
         }
         Relationships: []
       }
+      user_chat_settings: {
+        Row: {
+          created_at: string
+          custom_instructions: string | null
+          enable_citations: boolean
+          enable_followups: boolean
+          enable_pii_redaction: boolean
+          enable_semantic_cache: boolean
+          learning_mode_default: boolean
+          persona: string
+          preferred_dialect: string | null
+          preferred_language: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_instructions?: string | null
+          enable_citations?: boolean
+          enable_followups?: boolean
+          enable_pii_redaction?: boolean
+          enable_semantic_cache?: boolean
+          learning_mode_default?: boolean
+          persona?: string
+          preferred_dialect?: string | null
+          preferred_language?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_instructions?: string | null
+          enable_citations?: boolean
+          enable_followups?: boolean
+          enable_pii_redaction?: boolean
+          enable_semantic_cache?: boolean
+          learning_mode_default?: boolean
+          persona?: string
+          preferred_dialect?: string | null
+          preferred_language?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_chat_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_gallery: {
         Row: {
           created_at: string
@@ -2610,6 +2840,53 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "image_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_knowledge_graph: {
+        Row: {
+          confidence: number
+          created_at: string
+          entity: string
+          entity_type: string
+          id: string
+          metadata: Json
+          relation: string | null
+          source_message_id: string | null
+          target_entity: string | null
+          user_id: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          entity: string
+          entity_type: string
+          id?: string
+          metadata?: Json
+          relation?: string | null
+          source_message_id?: string | null
+          target_entity?: string | null
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          entity?: string
+          entity_type?: string
+          id?: string
+          metadata?: Json
+          relation?: string | null
+          source_message_id?: string | null
+          target_entity?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_knowledge_graph_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
