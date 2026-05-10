@@ -637,10 +637,7 @@ const ChatPage = () => {
         });
       },
       onStatus: (status) => {
-        let normalizedStatus = normalizeStatusLabel(status);
-        if (isDeepResearch && normalizedStatus === "Working on your request...") {
-          normalizedStatus = DEEP_RESEARCH_STATUS_FALLBACKS[researchTasksRef.current.length % DEEP_RESEARCH_STATUS_FALLBACKS.length];
-        }
+        const normalizedStatus = normalizeStatusLabel(status);
         if (normalizedStatus) {
           setSearchStatus(normalizedStatus);
           setIsThinking(true);
@@ -651,46 +648,10 @@ const ChatPage = () => {
       },
       onEvent: (payload: any) => {
         const ev = payload?.event;
-        if (ev === "plan") {
-          const queries = Array.isArray(payload.queries) ? payload.queries : [];
-          setResearchPlan({ goal: userInput || "Deep research", steps: queries.length > 0 ? queries.slice(0, 6) : ["Search trusted sources", "Read and compare evidence", "Write a clear final report"] });
-          updateResearchTask("start", { status: "done", label: "Research plan ready" });
-        } else if (ev === "search_query") {
-          const query = String(payload.query || "Searching sources");
-          upsertResearchTask({ id: `search-${query}`, kind: "search", label: `Searching: ${query}`, target: query, status: "running" });
-        } else if (ev === "source_engine") {
-          const engine = String(payload.engine || "Source");
-          const count = Number(payload.count || 0);
-          upsertResearchTask({ id: `engine-${engine}-${researchTasksRef.current.length}`, kind: engine.toLowerCase().includes("wiki") ? "wiki" : "academic", label: `${engine} returned ${count} result${count === 1 ? "" : "s"}`, target: engine, status: "done" });
-        } else if (ev === "deep_read") {
-          const url = String(payload.url || "Source");
-          upsertResearchTask({ id: `read-${url}`, kind: "read", label: "Reading source in depth", target: url, status: "running" });
-        } else if (ev === "multi_source_started") {
-          const query = String(payload.query || "multiple sources");
-          upsertResearchTask({ id: `multi-${query}`, kind: "analyze", label: `Reviewing sources for ${query}`, target: query, status: "running" });
-        } else if (ev === "plan_detailed") {
-          setResearchPlan({ goal: payload.goal || "", steps: Array.isArray(payload.steps) ? payload.steps : [] });
+        if (ev === "narration") {
+          pushNarration(String(payload.text || ""));
         } else if (ev === "clarify_questions") {
           if (Array.isArray(payload.questions)) setClarifyQs(payload.questions);
-        } else if (ev === "task_start") {
-          const t: ResearchTask = { id: payload.id, kind: payload.kind || "search", label: payload.label || "Working…", target: payload.target, status: "running" };
-          upsertResearchTask(t);
-        } else if (ev === "task_update") {
-          updateResearchTask(payload.id, { label: payload.label, target: payload.target });
-        } else if (ev === "task_done") {
-          updateResearchTask(payload.id, { status: payload.error ? "error" : "done", summary: payload.summary });
-        } else if (ev === "final_summary") {
-          researchTasksRef.current = researchTasksRef.current.map((task) => task.status === "running" ? { ...task, status: "done" } : task);
-          setResearchTasks(researchTasksRef.current);
-          setResearchSummary({
-            what_i_did: payload.what_i_did,
-            key_findings: payload.key_findings,
-            sources_count: payload.sources_count,
-            channels: payload.channels,
-            duration_ms: payload.duration_ms,
-            confidence: payload.confidence,
-            confidence_reason: payload.confidence_reason,
-          });
         }
       },
       onDone: async () => {
@@ -701,10 +662,6 @@ const ChatPage = () => {
         }
         setIsLoading(false);setIsThinking(false);setSearchStatus("");
         isSubmittingRef.current = false;
-        if (isDeepResearch && researchTasksRef.current.some((task) => task.status === "running")) {
-          researchTasksRef.current = researchTasksRef.current.map((task) => task.status === "running" ? { ...task, status: "done" } : task);
-          setResearchTasks(researchTasksRef.current);
-        }
         if (presenceChannelRef.current && chatUserId) {
           presenceChannelRef.current.send({ type: "broadcast", event: "ai_busy", payload: { user_id: chatUserId, busy: false } });
         }
