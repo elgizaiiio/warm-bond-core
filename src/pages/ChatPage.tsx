@@ -310,9 +310,6 @@ const ChatPage = () => {
     setPendingQuestions([]);
     setNarrations([]);
     setClarifyQs(null);
-    if (chatMode === "deep-research") {
-      setNarrations([buildInitialResearchNarration(userInput)]);
-    }
     setLoadingMessages(true);
     setMessages([]);
     setSystemEvents([]);
@@ -479,6 +476,9 @@ const ChatPage = () => {
     setPendingQuestions([]);
     setNarrations([]);
     setClarifyQs(null);
+    if (chatMode === "deep-research") {
+      setNarrations([buildInitialResearchNarration(userInput)]);
+    }
 
     const conversationPromise = createOrUpdateConversation(userInput || "File analysis").catch(() => null);
     void conversationPromise.then(async (resolvedConversationId) => {
