@@ -1646,6 +1646,15 @@ async function handleToolCalls(
         const searchTaskId = newTaskId();
         emitTaskStart(searchTaskId, "search", `Searching the web`, searchQuery);
         pushStatus(isDeepResearch ? "Gathering trusted sources..." : "Searching the web...");
+        if (isDeepResearch) {
+          const q = searchQuery.slice(0, 70);
+          narrate(N(
+            `Searching the web for: "${q}"…`,
+            `بدور دلوقتي على معلومات عن: «${q}»…`,
+            `Je cherche sur le web : « ${q} »…`,
+            `Buscando en la web: « ${q} »…`
+          ));
+        }
 
         const searchRequest = fetchWithTimeout("https://google.serper.dev/search", {
           method: "POST",
