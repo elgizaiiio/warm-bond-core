@@ -25,6 +25,7 @@ import AnimatedHeadline from "@/components/research/AnimatedHeadline";
 import ClarifyDialog, { type ClarifyQuestion } from "@/components/research/ClarifyDialog";
 import ConnectorsDialog from "@/components/ConnectorsDialog";
 import GlowButton from "@/components/GlowButton";
+import { ChatFollowups } from "@/components/chat/ChatFollowups";
 
 import {
   DropdownMenu,
@@ -2316,10 +2317,20 @@ Ask me anything to get started!`;
                     onToggleReaction={msg.id ? toggleReaction : undefined}
                     readers={msg.id ? (readersByMessageId[msg.id] || EMPTY_READERS) : EMPTY_READERS}
                     showReaders={members.length > 0 && msg.role === "user" && msg.user_id === chatUserId && i === messages.length - 1 - (messages[messages.length - 1]?.role === "assistant" ? 1 : 0)}
-                  />
-                </motion.div>
-                );
-              })}
+                   />
+                   {/* Phase 5: Suggested follow-ups under final assistant reply */}
+                   {msg.role === "assistant" && !isStreamingThis && i === messages.length - 1 && msg.content && i > 0 && messages[i - 1]?.role === "user" && (
+                     <ChatFollowups
+                       userMessage={messages[i - 1].content || ""}
+                       assistantReply={msg.content || ""}
+                       conversationId={conversationId}
+                       messageId={msg.id || null}
+                       onPick={(q) => setInput(q)}
+                     />
+                   )}
+                 </motion.div>
+                 );
+               })}
               {/* Sticky in-chat focus timers — float above messages while scrolling */}
               {chatMode === "learning" && studyTimers.length > 0 && (
                 <div className="sticky top-16 z-30 flex flex-col gap-2 pointer-events-none">
