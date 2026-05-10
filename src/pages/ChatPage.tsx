@@ -672,6 +672,26 @@ const ChatPage = () => {
         const ev = payload?.event;
         if (ev === "narration") {
           pushNarration(String(payload.text || ""));
+        } else if (ev === "narration_start") {
+          // begin a new empty narration item that will be filled by chunks
+          setNarrations((prev) => [...prev, ""]);
+        } else if (ev === "narration_chunk") {
+          const delta = String(payload.delta || "");
+          if (!delta) return;
+          setNarrations((prev) => {
+            if (prev.length === 0) return [delta];
+            const next = prev.slice();
+            next[next.length - 1] = (next[next.length - 1] || "") + delta;
+            return next;
+          });
+        } else if (ev === "narration_end") {
+          setNarrations((prev) => {
+            if (prev.length === 0) return prev;
+            const last = (prev[prev.length - 1] || "").trim();
+            if (last) return prev;
+            // discard empty narration
+            return prev.slice(0, -1);
+          });
         } else if (ev === "clarify_questions") {
           if (Array.isArray(payload.questions)) setClarifyQs(payload.questions);
         }
