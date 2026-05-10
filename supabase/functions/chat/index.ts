@@ -2613,6 +2613,7 @@ async function handleToolCalls(
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buf = "";
+      const sanitize = makeStreamSanitizer();
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
