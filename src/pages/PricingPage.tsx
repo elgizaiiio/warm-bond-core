@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import GlowButton from "@/components/GlowButton";
+import { goBackOr } from "@/lib/navigation";
 
 type PlanTier = "starter" | "pro" | "elite" | "business";
 
@@ -281,7 +282,7 @@ const PricingPage = () => {
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 sm:px-6 py-4 max-w-7xl mx-auto">
         <button
-          onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
+          onClick={() => goBackOr(navigate, "/")}
           className="text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Back"
         >

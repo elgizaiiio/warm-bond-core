@@ -208,6 +208,20 @@ const ChatPage = () => {
     setNarrations((prev) => (prev[prev.length - 1] === t ? prev : [...prev, t]));
   }, []);
 
+  const buildInitialResearchNarration = useCallback((text: string) => {
+    const topic = (text || "Deep Research").trim().replace(/\s+/g, " ").slice(0, 90);
+    if (/[\u0600-\u06FF]/.test(topic)) {
+      return `تمام، فهمت إنك عايز بحث عميق عن: «${topic}». هبدأ أجمع المصادر الحقيقية وأقولك كل خطوة بتحصل.`;
+    }
+    return `Got it — you want deep research about: “${topic}”. I’ll start gathering real sources and keep you updated step by step.`;
+  }, []);
+
+  const buildFinalResearchNarration = useCallback((text: string) => {
+    return /[\u0600-\u06FF]/.test(text)
+      ? "خلصت البحث وجمعت المصادر وركّبت التقرير النهائي بشكل منظم. تقدر تفتح المعاينة وتشوف النسخة المناسبة للقراءة."
+      : "Research is complete — I gathered sources, cross-checked them, and assembled the final structured report for preview.";
+  }, []);
+
   // Fetch user info for memory + welcome message
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -366,7 +380,12 @@ const ChatPage = () => {
   };
 
   const handleModeChange = (mode: ChatMode) => {
-    setChatMode((prev) => prev === mode ? "normal" : mode);
+    const nextMode = chatMode === mode ? "normal" : mode;
+    setChatMode(nextMode);
+    if (nextMode !== "learning") {
+      setStudyTimers([]);
+      setStudyMusic({ kind: null });
+    }
     if (mode === "deep-research") {
       setSearchEnabled(true);
     } else if (mode !== "normal") {
@@ -463,6 +482,9 @@ const ChatPage = () => {
     setPendingQuestions([]);
     setNarrations([]);
     setClarifyQs(null);
+    if (chatMode === "deep-research") {
+      setNarrations([buildInitialResearchNarration(userInput)]);
+    }
 
     const conversationPromise = createOrUpdateConversation(userInput || "File analysis").catch(() => null);
     void conversationPromise.then(async (resolvedConversationId) => {
@@ -673,6 +695,7 @@ const ChatPage = () => {
           const aId = await saveMessage(resolvedConversationId, "assistant", assistantContent, searchImages.length > 0 ? searchImages : undefined);
           if (aId) ownInsertedIdsRef.current.add(aId);
           if (isDeepResearch) {
+            pushNarration(buildFinalResearchNarration(userInput));
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
               await supabase.from("research_reports").upsert({
@@ -750,7 +773,8 @@ const ChatPage = () => {
   const handleSend = () => handleSendWithText();
 
   const handleNewChat = () => {
-    setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);isSubmittingRef.current = false;
+    if (studyAudioRef.current) { studyAudioRef.current.pause(); studyAudioRef.current.src = ""; }
+    setStudyTimers([]);setStudyMusic({ kind: null });setMessages([]);setConversationId(null);setConversationTitle("");setIsLoading(false);setIsThinking(false);setAttachedFiles([]);setSearchStatus("");setChatMode("normal");setSearchEnabled(true);setComputerUseEnabled(true);setIsShared(false);setShareId(null);setShareMode("private");setIsPinned(false);setPendingQuestions([]);setSelectedModel(null);setSelectedAgent(null);isSubmittingRef.current = false;
   };
 
   const loadUserTracks = useCallback(async () => {
@@ -765,6 +789,13 @@ const ChatPage = () => {
   }, []);
 
   useEffect(() => { loadUserTracks(); }, [loadUserTracks]);
+
+  useEffect(() => {
+    if (chatMode === "learning") return;
+    if (studyAudioRef.current) { studyAudioRef.current.pause(); studyAudioRef.current.src = ""; }
+    setStudyMusic({ kind: null });
+    setStudyTimers([]);
+  }, [chatMode]);
 
   const playUserTrack = useCallback(async (track: { id: string; name: string; storage_path: string }) => {
     const { data, error } = await supabase.storage.from("user-music").createSignedUrl(track.storage_path, 3600);
@@ -2179,7 +2210,7 @@ Ask me anything to get started!`;
                 );
               })}
               {/* Sticky in-chat focus timers — float above messages while scrolling */}
-              {studyTimers.length > 0 && (
+              {chatMode === "learning" && studyTimers.length > 0 && (
                 <div className="sticky top-16 z-30 flex flex-col gap-2 pointer-events-none">
                   <AnimatePresence>
                     {studyTimers.map((t) => (

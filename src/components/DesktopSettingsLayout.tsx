@@ -1,6 +1,7 @@
 import { ReactNode, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { goBackOr } from "@/lib/navigation";
 import {
   User, CreditCard, Gift, Globe, Paintbrush, Activity, Info, LogOut, ExternalLink, X, Code2, Flag,
 } from "lucide-react";
@@ -128,7 +129,7 @@ export function DesktopSettingsLayout({ children, title, subtitle }: DesktopSett
           <div className="flex-1 overflow-y-auto p-6 relative">
             {/* Close button */}
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => goBackOr(navigate, "/settings")}
               className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
             >
               <X className="w-4 h-4" />

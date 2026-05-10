@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Bell, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { goBackOr } from "@/lib/navigation";
 import { Switch } from "@/components/ui/switch";
 import AppLayout from "@/layouts/AppLayout";
 import { toast } from "@/hooks/use-toast";
@@ -96,7 +97,7 @@ const NotificationSettingsPage = () => {
       <div className="h-full overflow-y-auto">
         <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-muted transition-colors">
+            <button onClick={() => goBackOr(navigate, "/notifications")} className="p-2 rounded-lg hover:bg-muted transition-colors">
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <h1 className="text-xl font-bold text-foreground">Notification Preferences</h1>
