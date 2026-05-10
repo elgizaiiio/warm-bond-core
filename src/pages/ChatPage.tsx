@@ -1674,6 +1674,7 @@ Ask me anything to get started!`;
               </motion.button>
                 </>
               )}
+            </motion.div>
           ) : plusView === "models" ? (
             <motion.div
               key="models"
