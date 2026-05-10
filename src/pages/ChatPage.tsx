@@ -571,6 +571,7 @@ const ChatPage = () => {
     abortControllerRef.current = controller;
     let searchImages: string[] = [];
     let streamedProducts: ProductResult[] = [];
+    const sanitizeStreamChunk = makeLeakedToolStreamSanitizer();
 
     const isToolMarkerChunk = (chunk: string) => {
       const trimmed = chunk.trim();
@@ -615,7 +616,7 @@ const ChatPage = () => {
 
     const updateAssistant = (chunk: string) => {
       if (isToolMarkerChunk(chunk)) return;
-      const safeChunk = sanitizeLeakedToolText(chunk);
+      const safeChunk = sanitizeStreamChunk(chunk);
       if (!safeChunk) return;
       if (!hasStartedResponse) {
         hasStartedResponse = true;
