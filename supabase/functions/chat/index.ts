@@ -1467,13 +1467,86 @@ async function handleToolCalls(
     if (!isDeepResearch) return;
     controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "narration", text })}\n\n`));
   };
-  const topic = (userText || "").trim().slice(0, 80);
-  narrate(N(
-    `Got it — I'll do a deep dive on: "${topic}". Starting research now…`,
-    `تمام، فهمت إنك عايز بحث عميق عن: «${topic}». هبدأ دلوقتي…`,
-    `Compris — je lance une recherche approfondie sur : « ${topic} ». C'est parti…`,
-    `Entendido — voy a investigar a fondo: « ${topic} ». Empezando ahora…`
-  ));
+
+  // ── REAL AI-generated, streaming narration. Each milestone calls Gemini Flash Lite
+  // and streams tokens to the client so the user sees the AI literally typing what it's doing,
+  // in their exact language and dialect. No templates.
+  const narrationLangHint = isArabic
+    ? "Reply in casual Egyptian Arabic dialect (مصري دارج), one short sentence."
+    : isFrench
+      ? "Réponds en français familier, une seule courte phrase."
+      : isSpanish
+        ? "Responde en español coloquial, una sola frase corta."
+        : "Reply in casual conversational English, one short sentence.";
+
+  const aiNarrate = async (intent: string) => {
+    if (!isDeepResearch) return;
+    const key = Deno.env.get("LOVABLE_API_KEY");
+    if (!key) return;
+    const narrId = `n_${Math.random().toString(36).slice(2, 9)}`;
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "narration_start", id: narrId })}\n\n`));
+    try {
+      const resp = await fetchWithTimeout(LOVABLE_URL, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-lite",
+          stream: true,
+          temperature: 0.85,
+          messages: [
+            {
+              role: "system",
+              content: [
+                "You are the live narrator of a research assistant. The user just asked a question and you are doing real research for them.",
+                "Write a SINGLE short, natural, varied sentence telling the user what you are about to do or just discovered.",
+                "Speak in first person. Be warm, human, slightly enthusiastic. NEVER repeat phrasing.",
+                "NO emoji. NO markdown. NO quotes. NO prefixes. Just the sentence.",
+                `User's original question: "${userText.slice(0, 200)}"`,
+                narrationLangHint,
+              ].join("\n"),
+            },
+            { role: "user", content: `Current step: ${intent}\n\nWrite the one-sentence live narration now.` },
+          ],
+        }),
+      }, 12000);
+      if (!resp.ok || !resp.body) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "narration_end", id: narrId })}\n\n`));
+        return;
+      }
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      let acc = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() || "";
+        for (const ln of lines) {
+          const s = ln.trim();
+          if (!s.startsWith("data:")) continue;
+          const data = s.slice(5).trim();
+          if (!data || data === "[DONE]") continue;
+          try {
+            const j = JSON.parse(data);
+            const delta = j?.choices?.[0]?.delta?.content || "";
+            if (delta) {
+              acc += delta;
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "narration_chunk", id: narrId, delta })}\n\n`));
+            }
+          } catch { /* skip */ }
+        }
+      }
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "narration_end", id: narrId, text: acc })}\n\n`));
+    } catch (e) {
+      console.error("[aiNarrate]", e);
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "narration_end", id: narrId })}\n\n`));
+    }
+  };
+
+  const topic = (userText || "").trim().slice(0, 120);
+  await aiNarrate(`Greet briefly and tell the user you're starting a deep research on: "${topic}". This is the very first message — be welcoming.`);
 
   // ── Deep Research: produce a REAL, query-specific plan via a planning AI call.
   // No templates. The model thinks about THIS specific question and writes the plan
