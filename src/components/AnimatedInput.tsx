@@ -5,6 +5,7 @@ import MentionDropdown from "./MentionDropdown";
 import ModelPickerDropdown from "./ModelPickerDropdown";
 import type { AgentDef, AgentModel } from "@/lib/agentRegistry";
 import { getAgentById } from "@/lib/agentRegistry";
+import { TypingAnimation } from "@/components/ui/typing-animation";
 
 interface SmartQuestion {
   title: string;
@@ -233,7 +234,17 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           />
         )}
       </AnimatePresence>
-      <div className="rounded-xl liquid-glass overflow-hidden shadow-[0_8px_32px_-12px_rgba(0,0,0,0.18)]">
+      <div
+        className="rounded-xl overflow-hidden border border-white/15 dark:border-white/10 shadow-[0_12px_48px_-16px_rgba(0,0,0,0.35)]"
+        style={{
+          background:
+            "linear-gradient(135deg, hsl(var(--background) / 0.45), hsl(var(--background) / 0.25))",
+          backdropFilter: "blur(28px) saturate(1.8)",
+          WebkitBackdropFilter: "blur(28px) saturate(1.8)",
+          boxShadow:
+            "inset 0 1px 0 0 hsl(0 0% 100% / 0.18), inset 0 -1px 0 0 hsl(0 0% 0% / 0.06), 0 16px 48px -12px hsl(0 0% 0% / 0.25)",
+        }}
+      >
         <AnimatePresence>
           {hasQuestions && currentQuestion && (
             <motion.div
@@ -311,15 +322,30 @@ const AnimatedInput = ({ value, onChange, onSend, onCancel, onPlusClick, disable
           </motion.button>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center min-h-[48px]">
+            <div className="relative flex items-center min-h-[48px]">
+              {!value && displayedPlaceholder && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 flex items-center px-1 py-2.5 text-[1rem] text-muted-foreground/60 leading-relaxed overflow-hidden"
+                >
+                  <TypingAnimation
+                    key={displayedPlaceholder}
+                    duration={55}
+                    showCursor={false}
+                    className="truncate"
+                  >
+                    {displayedPlaceholder}
+                  </TypingAnimation>
+                </div>
+              )}
               <textarea
                 ref={textareaRef}
                 value={value}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
-                placeholder={displayedPlaceholder || "Ask anything…"}
+                placeholder=""
                 rows={1}
-                className="flex-1 w-full min-w-0 bg-transparent border-none outline-none resize-none text-[1rem] text-foreground placeholder:text-muted-foreground/60 py-2.5 px-1 leading-relaxed"
+                className="relative flex-1 w-full min-w-0 bg-transparent border-none outline-none resize-none text-[1rem] text-foreground py-2.5 px-1 leading-relaxed"
                 style={{ minHeight: "48px" }}
               />
             </div>
