@@ -1418,6 +1418,7 @@ async function handleToolCalls(
   const researchStartedAt = Date.now();
   const researchSourcesSet = new Set<string>();
   const researchChannels = new Set<string>();
+  let deepEnrichmentRuns = 0;
 
   // ── Deep Research: produce a REAL, query-specific plan via a planning AI call.
   // No templates. The model thinks about THIS specific question and writes the plan
@@ -1659,7 +1660,8 @@ async function handleToolCalls(
         }
 
         // ── Deep Research enrichment: layer multiple free open sources in parallel.
-        if (isDeepResearch) {
+        if (isDeepResearch && deepEnrichmentRuns < 1) {
+          deepEnrichmentRuns += 1;
           pushStatus("Consulting Wikipedia, arXiv, Reddit, Hacker News...");
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event: "multi_source_started", query: searchQuery })}\n\n`));
           const [wiki, arxiv, reddit, hn] = await Promise.allSettled([
@@ -1686,8 +1688,8 @@ async function handleToolCalls(
             emitTaskDone(auxId, `${e.results.length} results`);
           }
 
-          // Read top 2 organic links via Jina Reader for deeper content.
-          const topLinks: string[] = (searchData.organic || []).slice(0, 2).map((r: any) => r.link).filter(Boolean);
+          // Read the strongest organic link via Jina Reader for deeper content without risking timeout.
+          const topLinks: string[] = (searchData.organic || []).slice(0, 1).map((r: any) => r.link).filter(Boolean);
           if (topLinks.length > 0) {
             pushStatus("Reading top sources in depth...");
             const readIds = topLinks.map((u) => { const id = newTaskId(); emitTaskStart(id, "read", "Reading source in depth", u); return id; });
