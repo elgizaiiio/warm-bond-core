@@ -2423,6 +2423,20 @@ async function handleToolCalls(
         continue;
       }
 
+      // Free knowledge tools (Wikipedia, arXiv, GitHub, Reddit, StackOverflow, GDELT News, MathSolver)
+      const EXTRA_TOOL_NAMES = new Set(["WIKIPEDIA", "ARXIV", "GITHUB_SEARCH", "REDDIT_SEARCH", "STACKOVERFLOW", "NEWS_SEARCH", "MATH_SOLVER"]);
+      if (EXTRA_TOOL_NAMES.has(toolName)) {
+        pushStatus(`Looking up ${toolName.toLowerCase().replace("_", " ")}...`);
+        try {
+          const { execExtraTool } = await import("../_shared/extra-tools.ts");
+          const result = await execExtraTool(toolName, toolArgs);
+          allSearchResults.push(`${toolName} (${JSON.stringify(toolArgs).slice(0, 120)}):\n${result}`);
+        } catch (e) {
+          allSearchResults.push(`${toolName} failed: ${(e as Error).message}`);
+        }
+        continue;
+      }
+
       // Internal tools that must never route into the Composio "Connect account" flow.
       // If we got here it means the relevant API key (Serper / Hyperbrowser / etc.) is
       // missing — emit a clean fallback message instead of asking the user to connect a
@@ -2431,6 +2445,7 @@ async function handleToolCalls(
         "WEB_SEARCH", "BROWSE_WEBSITE", "SHOPPING_SEARCH", "CONVERT_CURRENCY",
         "GENERATE_IMAGE", "GENERATE_VIDEO", "GENERATE_VOICE", "CANVA_CREATE_SLIDES",
         "REMEMBER_FACT", "SEARCH_ATTACHMENTS", "CODE_INTERPRETER", "FETCH_URL",
+        "WIKIPEDIA", "ARXIV", "GITHUB_SEARCH", "REDDIT_SEARCH", "STACKOVERFLOW", "NEWS_SEARCH", "MATH_SOLVER",
       ]);
       const INTERNAL_PREFIXES = ["WEB", "BROWSE", "SEARCH", "SHOPPING", "FETCH", "GENERATE", "CODE", "REMEMBER", "CONVERT", "CANVA"];
       const KNOWN_COMPOSIO_APPS = new Set([
