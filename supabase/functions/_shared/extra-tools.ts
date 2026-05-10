@@ -369,14 +369,6 @@ export const PHASE4_TOOL_DEFS = [
   {
     type: "function",
     function: {
-      name: "CODE_INTERPRETER",
-      description: "Execute Python code in a secure sandbox (e2b) — for data analysis, math, plotting, file processing. Returns stdout/stderr/results.",
-      parameters: { type: "object", properties: { code: { type: "string" }, language: { type: "string", enum: ["python", "javascript"], default: "python" } }, required: ["code"] },
-    },
-  },
-  {
-    type: "function",
-    function: {
       name: "TRANSLATE",
       description: "Translate text between languages using AI. Use when user explicitly asks for translation.",
       parameters: { type: "object", properties: { text: { type: "string" }, target_lang: { type: "string", description: "e.g. ar, en, fr, es, de" }, source_lang: { type: "string", description: "Optional; auto-detect if omitted" } }, required: ["text", "target_lang"] },
