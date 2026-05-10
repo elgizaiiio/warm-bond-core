@@ -483,7 +483,7 @@ const ChatPage = () => {
     setNarrations([]);
     setClarifyQs(null);
     if (chatMode === "deep-research") {
-      setNarrations([buildInitialResearchNarration(userInput)]);
+      setNarrations([]);
     }
 
     const conversationPromise = createOrUpdateConversation(userInput || "File analysis").catch(() => null);
