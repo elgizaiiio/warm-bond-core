@@ -1048,11 +1048,12 @@ TEACHING RULES:
 
       // Extra free knowledge tools — load only those router suggested (or all if router skipped)
       try {
-        const { EXTRA_TOOL_DEFS } = await import("../_shared/extra-tools.ts");
+        const { EXTRA_TOOL_DEFS, PHASE4_TOOL_DEFS } = await import("../_shared/extra-tools.ts");
+        const allDefs = [...EXTRA_TOOL_DEFS, ...PHASE4_TOOL_DEFS];
         const wanted = new Set<string>(routerDecision?.tools_needed || []);
         const extras = wanted.size > 0
-          ? EXTRA_TOOL_DEFS.filter((t: any) => wanted.has(t.function.name))
-          : EXTRA_TOOL_DEFS; // default: expose all (low cost)
+          ? allDefs.filter((t: any) => wanted.has(t.function.name))
+          : allDefs;
         selectedTools.push(...extras);
       } catch (e) { console.warn("extra tools load failed", (e as Error).message); }
     }
