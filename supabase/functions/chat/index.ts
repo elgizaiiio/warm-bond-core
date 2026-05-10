@@ -2631,8 +2631,11 @@ async function handleToolCalls(
             if (delta.tool_calls) continue;
             const c = delta.content;
             if (c) {
-              streamed = true;
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`));
+              const cleaned = sanitize(c);
+              if (cleaned) {
+                streamed = true;
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: cleaned } }] })}\n\n`));
+              }
             }
           } catch { continue; }
         }
