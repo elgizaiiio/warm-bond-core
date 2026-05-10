@@ -2304,8 +2304,8 @@ async function handleToolCalls(
 - NEVER mention tool names, search queries, or internal steps.` 
         : isDeepResearch 
           ? `CRITICAL INSTRUCTIONS FOR DEEP RESEARCH REPORT:
-- Write an EXTREMELY detailed, comprehensive research report of AT LEAST 3500-6000 words when the topic allows.
-- The report must be a MASSIVE, professional-grade document — not a brief summary.
+- Write a detailed, comprehensive research report that fits reliably in one response, usually 1600-2500 words when the topic allows.
+- The report must be a professional-grade document — not a brief summary.
 - CRITICAL: Do NOT output markdown images or HTML images. The UI displays images separately.
 - LANGUAGE (MOST CRITICAL): DETECT the language of the user's ORIGINAL query and write the ENTIRE report in that EXACT language.
   * If the user wrote in English → write EVERYTHING in English
@@ -2314,11 +2314,11 @@ async function handleToolCalls(
   * If the user wrote in ANY other language → write EVERYTHING in that language
   * Do NOT default to Arabic. DETECT from the actual user text.
 - Structure with MANY sections and sub-sections:
-  ## Executive Summary (300+ words)
+  ## Executive Summary
   ## Research Map / Method (table or bullets)
-  ## Background & Context (300+ words)
-  ## Key Findings (700+ words with sub-sections)
-  ## Detailed Analysis (1200+ words with multiple sub-sections)
+  ## Background & Context
+  ## Key Findings
+  ## Detailed Analysis
   ## Data & Statistics (use tables for comparisons)
   ## Expert Opinions & Perspectives
   ## Risks, Limitations & Open Questions
@@ -2328,7 +2328,7 @@ async function handleToolCalls(
 - Do NOT include a "Sources", "References", or "Sources & References" section at the end. Cite sources INLINE only using [Source Name](URL) within the text.
 - Make it feel like a programmed research document: use **bold highlights**, inline code spans for important terms, blockquotes for insight callouts, bullet points (-), numbered lists, and tables extensively.
 - Do NOT show any raw search data, internal steps, or tool outputs.
-- Do NOT abbreviate or shorten. Write the FULL detailed report.`
+- Do not pad or repeat; make every section useful and complete.`
           : `Synthesize the information naturally and cite sources with [Source Name](URL). Match the user's language. Use bullet points (•) and dashes (-) for organized responses. Use bold for key points.`}` },
     ];
 
