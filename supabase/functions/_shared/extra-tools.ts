@@ -362,3 +362,208 @@ async function weather(location: string): Promise<string> {
     daily: wx.daily,
   });
 }
+
+// ── Phase 4: execution & multimodal tools ──
+
+export const PHASE4_TOOL_DEFS = [
+  {
+    type: "function",
+    function: {
+      name: "CODE_INTERPRETER",
+      description: "Execute Python code in a secure sandbox (e2b) — for data analysis, math, plotting, file processing. Returns stdout/stderr/results.",
+      parameters: { type: "object", properties: { code: { type: "string" }, language: { type: "string", enum: ["python", "javascript"], default: "python" } }, required: ["code"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "TRANSLATE",
+      description: "Translate text between languages using AI. Use when user explicitly asks for translation.",
+      parameters: { type: "object", properties: { text: { type: "string" }, target_lang: { type: "string", description: "e.g. ar, en, fr, es, de" }, source_lang: { type: "string", description: "Optional; auto-detect if omitted" } }, required: ["text", "target_lang"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "IMAGE_VISION",
+      description: "Analyze an image URL: describe content, read text (OCR), identify objects, answer visual questions.",
+      parameters: { type: "object", properties: { image_url: { type: "string" }, question: { type: "string", description: "What to ask about the image. Default: describe in detail." } }, required: ["image_url"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "TRANSCRIBE_AUDIO",
+      description: "Transcribe an audio/video URL to text via Deepgram. Supports many languages.",
+      parameters: { type: "object", properties: { audio_url: { type: "string" }, language: { type: "string", default: "multi" } }, required: ["audio_url"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "TEXT_TO_SPEECH",
+      description: "Convert text to natural speech audio (returns an audio URL).",
+      parameters: { type: "object", properties: { text: { type: "string" }, voice: { type: "string", description: "Voice id, optional" } }, required: ["text"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "CSV_ANALYZE",
+      description: "Fetch a CSV from a URL, parse it, and return stats: row count, columns, sample rows, basic numeric summary.",
+      parameters: { type: "object", properties: { url: { type: "string" }, max_rows: { type: "number", default: 1000 } }, required: ["url"] },
+    },
+  },
+];
+
+export async function execPhase4Tool(name: string, args: Record<string, any>): Promise<string> {
+  try {
+    switch (name) {
+      case "CODE_INTERPRETER": return await codeInterpreter(args.code, args.language || "python");
+      case "TRANSLATE": return await translateText(args.text, args.target_lang, args.source_lang);
+      case "IMAGE_VISION": return await imageVision(args.image_url, args.question || "Describe this image in detail.");
+      case "TRANSCRIBE_AUDIO": return await transcribeAudio(args.audio_url, args.language || "multi");
+      case "TEXT_TO_SPEECH": return await textToSpeech(args.text, args.voice);
+      case "CSV_ANALYZE": return await csvAnalyze(args.url, args.max_rows || 1000);
+      default: return JSON.stringify({ error: `Unknown phase4 tool: ${name}` });
+    }
+  } catch (e) {
+    return JSON.stringify({ error: (e as Error).message });
+  }
+}
+
+async function codeInterpreter(code: string, language: string): Promise<string> {
+  const key = Deno.env.get("E2B_API_KEY");
+  if (!key) return JSON.stringify({ error: "code interpreter not configured" });
+  // e2b Code Interpreter REST API
+  const r = await fetch("https://api.e2b.dev/v1/sandboxes/code-interpreter-v1/execute", {
+    method: "POST",
+    headers: { "X-API-Key": key, "Content-Type": "application/json" },
+    body: JSON.stringify({ code, language }),
+  });
+  if (!r.ok) {
+    // Fallback: simple JS eval for trivial JS only
+    if (language === "javascript") {
+      try {
+        const result = Function(`"use strict"; ${code}`)();
+        return JSON.stringify({ result: String(result) });
+      } catch (err) { return JSON.stringify({ error: (err as Error).message }); }
+    }
+    return JSON.stringify({ error: `e2b ${r.status}` });
+  }
+  const data = await r.json();
+  return JSON.stringify({
+    stdout: (data.logs?.stdout || []).join("\n").slice(0, 4000),
+    stderr: (data.logs?.stderr || []).join("\n").slice(0, 2000),
+    results: (data.results || []).map((x: any) => ({ text: x.text, type: x.type })).slice(0, 5),
+    error: data.error,
+  });
+}
+
+async function translateText(text: string, target: string, source?: string): Promise<string> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) return JSON.stringify({ error: "translation not configured" });
+  const sys = `You are a professional translator. Translate the user's text into ${target}${source ? ` (source: ${source})` : ""}. Output ONLY the translation, no explanations, no quotes.`;
+  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash-lite",
+      messages: [{ role: "system", content: sys }, { role: "user", content: text.slice(0, 8000) }],
+      temperature: 0.2, stream: false,
+    }),
+  });
+  if (!r.ok) return JSON.stringify({ error: `translate ${r.status}` });
+  const data = await r.json();
+  return JSON.stringify({ translation: data?.choices?.[0]?.message?.content || "", target_lang: target });
+}
+
+async function imageVision(url: string, question: string): Promise<string> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) return JSON.stringify({ error: "vision not configured" });
+  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [{
+        role: "user",
+        content: [
+          { type: "text", text: question },
+          { type: "image_url", image_url: { url } },
+        ],
+      }],
+      stream: false,
+    }),
+  });
+  if (!r.ok) return JSON.stringify({ error: `vision ${r.status}` });
+  const data = await r.json();
+  return JSON.stringify({ analysis: data?.choices?.[0]?.message?.content || "" });
+}
+
+async function transcribeAudio(url: string, language: string): Promise<string> {
+  const key = Deno.env.get("DEEPGRAM_APIKEY");
+  if (!key) return JSON.stringify({ error: "transcription not configured" });
+  const lang = language === "multi" ? "multi" : language;
+  const r = await fetch(`https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&language=${lang}&punctuate=true`, {
+    method: "POST",
+    headers: { Authorization: `Token ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+  if (!r.ok) return JSON.stringify({ error: `deepgram ${r.status}` });
+  const data = await r.json();
+  const transcript = data?.results?.channels?.[0]?.alternatives?.[0]?.transcript || "";
+  return JSON.stringify({ transcript: transcript.slice(0, 8000), duration: data?.metadata?.duration });
+}
+
+async function textToSpeech(text: string, voice?: string): Promise<string> {
+  const key = Deno.env.get("DEEPGRAM_APIKEY");
+  if (!key) return JSON.stringify({ error: "tts not configured" });
+  const model = voice || "aura-asteria-en";
+  const r = await fetch(`https://api.deepgram.com/v1/speak?model=${model}`, {
+    method: "POST",
+    headers: { Authorization: `Token ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ text: text.slice(0, 2000) }),
+  });
+  if (!r.ok) return JSON.stringify({ error: `tts ${r.status}` });
+  const buf = await r.arrayBuffer();
+  // Base64 inline (model can hand to UI). For large, recommend storing — keep small.
+  let bin = ""; const bytes = new Uint8Array(buf);
+  for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+  const b64 = btoa(bin);
+  return JSON.stringify({ audio_base64: b64.slice(0, 200000), mime: "audio/mpeg", note: "Base64 audio truncated if very long; play via data URL." });
+}
+
+async function csvAnalyze(url: string, maxRows: number): Promise<string> {
+  const r = await fetch(url);
+  if (!r.ok) return JSON.stringify({ error: `fetch ${r.status}` });
+  const text = await r.text();
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  if (lines.length === 0) return JSON.stringify({ error: "empty csv" });
+  const split = (line: string) => {
+    const out: string[] = []; let cur = ""; let inQ = false;
+    for (const c of line) {
+      if (c === '"') { inQ = !inQ; continue; }
+      if (c === "," && !inQ) { out.push(cur); cur = ""; continue; }
+      cur += c;
+    }
+    out.push(cur); return out;
+  };
+  const headers = split(lines[0]);
+  const rows = lines.slice(1, Math.min(lines.length, maxRows + 1)).map(split);
+  // Numeric summary per column
+  const summary: any = {};
+  headers.forEach((h, i) => {
+    const nums = rows.map((r) => parseFloat(r[i])).filter((n) => !isNaN(n));
+    if (nums.length > rows.length * 0.5) {
+      const sum = nums.reduce((a, b) => a + b, 0);
+      summary[h] = { count: nums.length, min: Math.min(...nums), max: Math.max(...nums), mean: +(sum / nums.length).toFixed(3) };
+    }
+  });
+  return JSON.stringify({
+    columns: headers,
+    row_count: rows.length,
+    sample: rows.slice(0, 5).map((r) => Object.fromEntries(headers.map((h, i) => [h, r[i]]))),
+    numeric_summary: summary,
+  });
+}
