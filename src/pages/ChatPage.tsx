@@ -143,10 +143,7 @@ const ChatPage = () => {
   const [chatMode, setChatMode] = useState<ChatMode>("normal");
   const [attachedFiles, setAttachedFiles] = useState<{name: string;type: string;data: string;}[]>([]);
   const [searchStatus, setSearchStatus] = useState<string>("");
-  const [researchPlan, setResearchPlan] = useState<ResearchPlan | null>(null);
-  const [researchTasks, setResearchTasks] = useState<ResearchTask[]>([]);
-  const [researchSummary, setResearchSummary] = useState<ResearchSummary | null>(null);
-  const researchTasksRef = useRef<ResearchTask[]>([]);
+  const [narrations, setNarrations] = useState<string[]>([]);
   const [clarifyQs, setClarifyQs] = useState<ClarifyQuestion[] | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareMode, setShareMode] = useState<"private" | "public">("public");
